@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>AttendEase</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #16213e;
+    --surface3: #0d1b2a;
+    --accent: #4fc3f7;
+    --accent2: #7c4dff;
+    --present: #00e676;
+    --absent: #ff1744;
+    --excused: #ffab40;
+    --text: #e8eaf6;
+    --text2: #90a4ae;
+    --text3: #546e7a;
+    --border: rgba(79,195,247,0.15);
+    --border2: rgba(79,195,247,0.3);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── SPLASH ── */
+  #screen-splash {
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, #1a1a3e 0%, #0f0f1a 60%);
+    position: relative;
+    overflow: hidden;
+  }
+  #screen-splash::before {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,195,247,0.08) 0%, transparent 70%);
+    top: -100px; right: -100px;
+  }
+  #screen-splash::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,77,255,0.08) 0%, transparent 70%);
+    bottom: -80px; left: -80px;
+  }
+  .splash-logo {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .splash-logo span { color: var(--accent2); }
+  .splash-sub {
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 1;
+  }
+  .splash-btn {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 50px;
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .splash-btn:active { transform: scale(0.97); }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 20px 20px 12px;
+    gap: 12px;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 10;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .topbar-back {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    color: var(--text);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 17px; font-weight: 600; flex: 1; }
+  .topbar-action {
+    background: var(--accent2);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* ── HOME ── */
+  #screen-home {
+    background: var(--bg);
+  }
+  .home-header {
+    padding: 32px 24px 20px;
+    background: linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
+  }
+  .home-greeting {
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .home-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .home-date {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .home-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 20px 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 20px 12px;
+  }
+  .home-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 20px 20px;
+  }
+  .action-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    text-align: left;
+  }
+  .action-card:active { transform: scale(0.97); }
+  .action-card:hover { border-color: var(--border2); }
+  .action-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .action-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .action-desc {
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.5;
+  }
+  .action-card.primary { border-color: rgba(79,195,247,0.4); background: rgba(79,195,247,0.06); }
+  .action-card.primary .action-label { color: var(--accent); }
+
+  /* ── SECTIONS LIST ── */
+  .list-container { padding: 16px 20px; flex: 1; overflow-y: auto; }
+  .section-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    gap: 14px;
+  }
+  .section-item:active { transform: scale(0.98); }
+  .section-item:hover { border-color: var(--border2); }
+  .section-avatar {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .section-info { flex: 1; }
+  .section-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+  .section-count { font-size: 12px; color: var(--text3); }
+  .section-arrow { color: var(--text3); font-size: 16px; }
+  .section-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    color: var(--text2);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: var(--surface2); }
+  .icon-btn.danger:hover { background: rgba(255,23,68,0.1); color: var(--absent); border-color: rgba(255,23,68,0.3); }
+
+  /* ── ADD FORM ── */
+  .form-container { padding: 20px; flex: 1; }
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--text3); }
+  .btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--text2);
+    border: 0.5px solid var(--border);
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* ── STUDENT LIST ── */
+  .student-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .student-num {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .student-name { flex: 1; font-size: 14px; font-weight: 500; }
+
+  /* ── TAKE ATTENDANCE ── */
+  #screen-take-attendance {
+    background: var(--bg);
+  }
+  .take-header {
+    padding: 20px 24px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .take-section { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .take-date { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+  .take-progress-bar {
+    height: 3px;
+    background: var(--surface2);
+    margin: 12px 0 0;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .take-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .take-counter {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 8px;
+  }
+
+  .flashcard-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .flashcard {
+    width: 100%;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 24px;
+    padding: 40px 28px;
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .flashcard::before {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,195,247,0.04) 0%, transparent 70%);
+    top: -60px; right: -60px;
+  }
+  .student-number-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .student-display-name {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .student-display-section {
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  .attendance-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .att-btn {
+    padding: 18px 8px;
+    border-radius: var(--radius);
+    border: 2px solid transparent;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .att-btn:active { transform: scale(0.95); }
+  .att-btn .att-icon { font-size: 24px; }
+
+  .btn-present {
+    background: rgba(0,230,118,0.1);
+    border-color: rgba(0,230,118,0.4);
+    color: var(--present);
+  }
+  .btn-present:active, .btn-present.selected {
+    background: rgba(0,230,118,0.2);
+    border-color: var(--present);
+    box-shadow: 0 0 20px rgba(0,230,118,0.2);
+  }
+  .btn-absent {
+    background: rgba(255,23,68,0.1);
+    border-color: rgba(255,23,68,0.4);
+    color: var(--absent);
+  }
+  .btn-absent:active, .btn-absent.selected {
+    background: rgba(255,23,68,0.2);
+    border-color: var(--absent);
+    box-shadow: 0 0 20px rgba(255,23,68,0.2);
+  }
+  .btn-excused {
+    background: rgba(255,171,64,0.1);
+    border-color: rgba(255,171,64,0.4);
+    color: var(--excused);
+  }
+  .btn-excused:active, .btn-excused.selected {
+    background: rgba(255,171,64,0.2);
+    border-color: var(--excused);
+    box-shadow: 0 0 20px rgba(255,171,64,0.2);
+  }
+
+  .take-nav {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface2); }
+  .nav-btn-finish {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border: none;
+    font-weight: 600;
+  }
+
+  /* ── RECORDS ── */
+  .record-date-group { margin-bottom: 20px; }
+  .record-date-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .record-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .record-status {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .record-status.P { background: rgba(0,230,118,0.12); color: var(--present); }
+  .record-status.A { background: rgba(255,23,68,0.12); color: var(--absent); }
+  .record-status.E { background: rgba(255,171,64,0.12); color: var(--excused); }
+  .record-info { flex: 1; }
+  .record-name { font-size: 14px; font-weight: 500; }
+  .record-section { font-size: 12px; color: var(--text3); }
+
+  /* ── ABSENCE SUMMARY ── */
+  .absence-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .absence-bar-wrap { flex: 1; }
+  .absence-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .absence-bar-bg {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .absence-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .absence-count {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 36px;
+    text-align: right;
+  }
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+  }
+  .badge-warn { background: rgba(255,171,64,0.15); color: var(--excused); }
+  .badge-danger { background: rgba(255,23,68,0.15); color: var(--absent); }
+  .badge-drop { background: rgba(255,23,68,0.25); color: #ff6b6b; }
+
+  /* ── IMPORT/EXPORT ── */
+  .import-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .import-zone:hover { border-color: var(--accent); background: rgba(79,195,247,0.03); }
+  .import-zone-icon { font-size: 40px; margin-bottom: 12px; }
+  .import-zone-text { font-size: 15px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .import-zone-sub { font-size: 12px; color: var(--text3); }
+  .export-option {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .export-option:hover { border-color: var(--border2); }
+  .export-icon { font-size: 24px; }
+  .export-info { flex: 1; }
+  .export-name { font-size: 14px; font-weight: 600; }
+  .export-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    border: 0.5px solid var(--border);
+    padding: 24px 24px 40px;
+    width: 100%;
+    max-width: 500px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    z-index: 200;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── SECTION SELECT ── */
+  .section-select-item {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .section-select-item:hover { border-color: var(--accent); }
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-text { font-size: 15px; font-weight: 500; margin-bottom: 8px; color: var(--text2); }
+  .empty-sub { font-size: 13px; line-height: 1.6; }
+
+  /* ── SUMMARY SCREEN ── */
+  .summary-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 0 20px 12px;
+  }
+  .summary-title { font-size: 13px; color: var(--text3); margin-bottom: 12px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .summary-stat { text-align: center; }
+  .summary-num { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .summary-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .c-present { color: var(--present); }
+  .c-absent { color: var(--absent); }
+  .c-excused { color: var(--excused); }
+
+  input[type="file"] { display: none; }
+  select.form-input { appearance: none; }
+
+  .pending-badge {
+    background: rgba(255,171,64,0.15);
+    color: var(--excused);
+    border: 0.5px solid rgba(255,171,64,0.3);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 20px 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+  }
+  .tab.active {
+    background: rgba(79,195,247,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── GOOGLE SIGN-IN SCREEN ── */
+  #screen-login {
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, #1a1a3e 0%, #0f0f1a 60%);
+    position: relative;
+    overflow: hidden;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  #screen-login::before {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,195,247,0.08) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    pointer-events: none;
+  }
+  #screen-login::after {
+    content: '';
+    position: absolute;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,77,255,0.08) 0%, transparent 70%);
+    bottom: -80px; left: -80px;
+    pointer-events: none;
+  }
+  .login-logo {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    position: relative; z-index: 1;
+  }
+  .login-logo span { color: var(--accent2); }
+  .login-sub {
+    font-size: 12px;
+    color: var(--text2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    position: relative; z-index: 1;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 24px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 360px;
+    position: relative; z-index: 1;
+    margin-bottom: 24px;
+  }
+  .login-headline {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .login-body {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: white;
+    color: #1f1f1f;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .google-btn:active { transform: scale(0.97); }
+  .google-btn:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .google-btn svg { flex-shrink: 0; }
+  .login-features {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 360px;
+  }
+  .login-feature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .login-feature-icon {
+    width: 28px; height: 28px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  /* ── USER PROFILE BAR ── */
+  .user-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--surface2);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .user-info { flex: 1; }
+  .user-name { font-size: 13px; font-weight: 600; }
+  .user-email { font-size: 11px; color: var(--text3); }
+  .signout-btn {
+    background: transparent;
+    border: 0.5px solid var(--border);
+    color: var(--text3);
+    font-size: 11px;
+    font-family: 'Sora', sans-serif;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .signout-btn:hover { color: var(--absent); border-color: rgba(255,23,68,0.4); }
+
+  /* ── AUTH LOADING ── */
+  #screen-auth-loading {
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+  .auth-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .auth-loading-text {
+    font-size: 14px;
+    color: var(--text2);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH LOADING ── -->
+<div class="screen active" id="screen-auth-loading">
+  <div class="auth-spinner"></div>
+  <div class="auth-loading-text">Checking sign-in status…</div>
+</div>
+
+<!-- ── LOGIN ── -->
+<div class="screen" id="screen-login">
+  <div class="login-logo">Attend<span>Ease</span></div>
+  <div class="login-sub">Smart Attendance Tracker</div>
+  <div class="login-card">
+    <div class="login-headline">Sign in to continue</div>
+    <div class="login-body">Your data is private and isolated to your account. Sign in from any device and your sections will always be there.</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Sign in with Google
+    </button>
+  </div>
+  <div class="login-features">
+    <div class="login-feature"><div class="login-feature-icon">🔒</div> Your data is never mixed with other teachers</div>
+    <div class="login-feature"><div class="login-feature-icon">📱</div> Access from any phone or tablet</div>
+    <div class="login-feature"><div class="login-feature-icon">☁️</div> Google Sheets sync coming in Stage 3</div>
+  </div>
+</div>
+
+<!-- ── HOME ── -->
+<div class="screen" id="screen-home">
+  <!-- User bar -->
+  <div class="user-bar" id="user-bar">
+    <div class="user-avatar" id="user-avatar-el"></div>
+    <div class="user-info">
+      <div class="user-name" id="user-display-name"></div>
+      <div class="user-email" id="user-display-email"></div>
+    </div>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="home-header">
+    <div class="home-greeting" id="home-greeting">Welcome back</div>
+    <div class="home-title">AttendEase 📋</div>
+    <div class="home-date" id="home-date"></div>
+  </div>
+  <div class="home-stats" id="home-stats">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-sections">0</div>
+      <div class="stat-label">Sections</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-students">0</div>
+      <div class="stat-label">Students</div>
+    </div>
+  </div>
+
+  <div class="section-title">Quick Actions</div>
+  <div class="home-actions">
+    <div class="action-card primary" onclick="showScreen('screen-take-select')">
+      <span class="action-icon">✅</span>
+      <div class="action-label">Take Attendance</div>
+      <div class="action-desc">Start a new session</div>
+    </div>
+    <div class="action-card" onclick="showScreen('screen-sections')">
+      <span class="action-icon">🏫</span>
+      <div class="action-label">Manage Sections</div>
+      <div class="action-desc">Add or edit sections</div>
+    </div>
+    <div class="action-card" onclick="showScreen('screen-records')">
+      <span class="action-icon">📅</span>
+      <div class="action-label">Records</div>
+      <div class="action-desc">View past sessions</div>
+    </div>
+    <div class="action-card" onclick="showScreen('screen-absences')">
+      <span class="action-icon">🚨</span>
+      <div class="action-label">Absence Summary</div>
+      <div class="action-desc">Track absences</div>
+    </div>
+  </div>
+
+  <div class="section-title">Data</div>
+  <div class="home-actions">
+    <div class="action-card" onclick="showScreen('screen-import-export')">
+      <span class="action-icon">📥</span>
+      <div class="action-label">Import / Export</div>
+      <div class="action-desc">Excel files</div>
+    </div>
+    <div class="action-card" id="sync-card" onclick="syncPending()" style="opacity:0.5">
+      <span class="action-icon">☁️</span>
+      <div class="action-label">Sync</div>
+      <div class="action-desc" id="sync-desc">No pending data</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTIONS LIST ── -->
+<div class="screen" id="screen-sections">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Sections</span>
+    <button class="topbar-action" onclick="showScreen('screen-add-section')">+ Add</button>
+  </div>
+  <div class="list-container" id="sections-list"></div>
+</div>
+
+<!-- ── ADD SECTION ── -->
+<div class="screen" id="screen-add-section">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-sections')">←</button>
+    <span class="topbar-title" id="add-section-title">New Section</span>
+  </div>
+  <div class="form-container">
+    <div class="form-group">
+      <label class="form-label">Section Name</label>
+      <input class="form-input" id="input-section-name" placeholder="e.g. BSIT-1A" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subject / Course (optional)</label>
+      <input class="form-input" id="input-section-subject" placeholder="e.g. Computer Programming 1" type="text">
+    </div>
+    <input type="hidden" id="editing-section-id">
+    <button class="btn-primary" onclick="saveSection()">Save Section</button>
+    <button class="btn-secondary" onclick="showScreen('screen-sections')">Cancel</button>
+  </div>
+</div>
+
+<!-- ── STUDENTS ── -->
+<div class="screen" id="screen-students">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-sections')">←</button>
+    <span class="topbar-title" id="students-title">Students</span>
+    <button class="topbar-action" onclick="showAddStudent()">+ Add</button>
+  </div>
+  <div class="list-container" id="students-list"></div>
+</div>
+
+<!-- ── ADD STUDENT ── -->
+<div class="screen" id="screen-add-student">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-students')">←</button>
+    <span class="topbar-title" id="add-student-title">Add Student</span>
+  </div>
+  <div class="form-container">
+    <div class="form-group">
+      <label class="form-label">Last Name</label>
+      <input class="form-input" id="input-last-name" placeholder="e.g. Dela Cruz" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">First Name</label>
+      <input class="form-input" id="input-first-name" placeholder="e.g. Juan" type="text">
+    </div>
+    <input type="hidden" id="editing-student-id">
+    <button class="btn-primary" onclick="saveStudent()">Save Student</button>
+    <button class="btn-secondary" onclick="showScreen('screen-students')">Cancel</button>
+  </div>
+</div>
+
+<!-- ── TAKE ATTENDANCE: SELECT SECTION ── -->
+<div class="screen" id="screen-take-select">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Take Attendance</span>
+  </div>
+  <div class="list-container" id="take-section-list"></div>
+</div>
+
+<!-- ── TAKE ATTENDANCE: FLASHCARD ── -->
+<div class="screen" id="screen-take-attendance">
+  <div class="take-header" style="padding:20px 24px 16px;">
+    <div class="take-section" id="take-section-name"></div>
+    <div class="take-date" id="take-date-label"></div>
+    <div class="take-progress-bar"><div class="take-progress-fill" id="take-progress"></div></div>
+    <div class="take-counter" id="take-counter"></div>
+  </div>
+  <div class="flashcard-area">
+    <div class="flashcard">
+      <div class="student-number-label" id="flashcard-num"></div>
+      <div class="student-display-name" id="flashcard-name"></div>
+      <div class="student-display-section" id="flashcard-section"></div>
+    </div>
+    <div class="attendance-buttons">
+      <button class="att-btn btn-present" onclick="markAttendance('P')">
+        <span class="att-icon">✅</span> PRESENT
+      </button>
+      <button class="att-btn btn-absent" onclick="markAttendance('A')">
+        <span class="att-icon">❌</span> ABSENT
+      </button>
+      <button class="att-btn btn-excused" onclick="markAttendance('E')">
+        <span class="att-icon">📝</span> EXCUSED
+      </button>
+    </div>
+    <div class="take-nav">
+      <button class="nav-btn" onclick="prevStudent()" id="btn-prev">← Back</button>
+      <button class="nav-btn" onclick="skipStudent()">Skip</button>
+      <button class="nav-btn nav-btn-finish" id="btn-finish" onclick="finishAttendance()" style="display:none">Finish ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SESSION SUMMARY ── -->
+<div class="screen" id="screen-summary">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Session Complete</span>
+  </div>
+  <div style="padding:20px 20px 12px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:8px;">🎉</div>
+    <div style="font-size:18px; font-weight:700; margin-bottom:4px;" id="summary-section"></div>
+    <div style="font-size:12px; color:var(--text3); font-family:'JetBrains Mono',monospace;" id="summary-date"></div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-title">Attendance Summary</div>
+    <div class="summary-grid">
+      <div class="summary-stat"><div class="summary-num c-present" id="sum-present">0</div><div class="summary-label">Present</div></div>
+      <div class="summary-stat"><div class="summary-num c-absent" id="sum-absent">0</div><div class="summary-label">Absent</div></div>
+      <div class="summary-stat"><div class="summary-num c-excused" id="sum-excused">0</div><div class="summary-label">Excused</div></div>
+    </div>
+  </div>
+  <div style="padding:0 20px;">
+    <button class="btn-primary" onclick="goHome()" style="margin-bottom:10px;">Back to Home</button>
+    <button class="btn-secondary" onclick="showScreen('screen-records')">View Records</button>
+  </div>
+</div>
+
+<!-- ── RECORDS ── -->
+<div class="screen" id="screen-records">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Attendance Records</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="filterRecords('all', this)">All</button>
+    <button class="tab" onclick="filterRecords('P', this)">Present</button>
+    <button class="tab" onclick="filterRecords('A', this)">Absent</button>
+    <button class="tab" onclick="filterRecords('E', this)">Excused</button>
+  </div>
+  <div class="list-container" id="records-list" style="padding-top:0"></div>
+</div>
+
+<!-- ── ABSENCE SUMMARY ── -->
+<div class="screen" id="screen-absences">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Absence Summary</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="filterSection('all', this)">All Sections</button>
+    <button class="tab" onclick="filterSection('warn', this)">⚠️ Warning</button>
+    <button class="tab" onclick="filterSection('danger', this)">🚨 Critical</button>
+  </div>
+  <div class="list-container" id="absence-list" style="padding-top:0"></div>
+</div>
+
+<!-- ── IMPORT / EXPORT ── -->
+<div class="screen" id="screen-import-export">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Import / Export</span>
+  </div>
+  <div class="form-container">
+    <div class="form-label" style="margin-bottom:12px">Import from Excel</div>
+    <div class="import-zone" onclick="document.getElementById('file-input').click()">
+      <div class="import-zone-icon">📥</div>
+      <div class="import-zone-text">Tap to choose Excel file</div>
+      <div class="import-zone-sub">.xlsx or .xls • Columns: Section, Last Name, First Name</div>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="importExcel(event)">
+
+    <div style="margin-bottom:12px; margin-top:24px;">
+      <div class="form-label" style="margin-bottom:12px">Export to Excel</div>
+      <div class="export-option" onclick="exportMasterlist()">
+        <span class="export-icon">👥</span>
+        <div class="export-info">
+          <div class="export-name">Masterlist</div>
+          <div class="export-desc">All sections and student names</div>
+        </div>
+        <span style="color:var(--text3)">↓</span>
+      </div>
+      <div class="export-option" onclick="exportAttendance()">
+        <span class="export-icon">📅</span>
+        <div class="export-info">
+          <div class="export-name">Attendance Records</div>
+          <div class="export-desc">All sessions per section (one sheet each)</div>
+        </div>
+        <span style="color:var(--text3)">↓</span>
+      </div>
+      <div class="export-option" onclick="exportAbsenceSummary()">
+        <span class="export-icon">🚨</span>
+        <div class="export-info">
+          <div class="export-name">Absence Summary</div>
+          <div class="export-desc">Total absences per student with alert levels</div>
+        </div>
+        <span style="color:var(--text3)">↓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Confirm</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STAGE 2 — Google Login + Per-Teacher Data Isolation
+// ══════════════════════════════════════════════════════════
+
+// ── GOOGLE OAUTH CONFIG ──
+// Replace with your own Google Client ID from console.cloud.google.com
+// Authorised origins: the URL you're serving this file from (e.g. http://localhost, file://)
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+// ── AUTH STATE ──
+let currentUser = null; // { id, name, email, picture, given_name }
+
+// ── DB KEY is per-user to ensure data isolation ──
+function dbKey() { return `attendease_db_${currentUser.id}`; }
+function pendingKey() { return `attendease_pending_${currentUser.id}`; }
+
+// ── STATE ──
+let db = { sections: [], students: [], records: [] };
+let currentSectionId = null;
+let currentStudentIndex = 0;
+let sessionStudents = [];
+let sessionAnswers = {};
+let recordsFilter = 'all';
+let absenceSectionFilter = 'all';
+
+// ── PERSIST ──
+function saveDB() { localStorage.setItem(dbKey(), JSON.stringify(db)); }
+function loadDB() {
+  const raw = localStorage.getItem(dbKey());
+  if (raw) db = JSON.parse(raw);
+  else db = { sections: [], students: [], records: [] };
+}
+
+// ── UTILS ──
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtDate(iso) {
+  const [y,m,d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[+m-1]} ${+d}, ${y}`;
+}
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function showModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+function closeModalForce() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ── NAVIGATION ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-home') updateHome();
+  if (id === 'screen-sections') renderSections();
+  if (id === 'screen-students') renderStudents();
+  if (id === 'screen-take-select') renderTakeSelect();
+  if (id === 'screen-records') { recordsFilter='all'; document.querySelectorAll('#screen-records .tab').forEach((t,i)=>t.classList.toggle('active',i===0)); renderRecords(); }
+  if (id === 'screen-absences') renderAbsences();
+}
+function goHome() { showScreen('screen-home'); }
+
+// ══════════════════════════════════════════════════════════
+// GOOGLE AUTH
+// ══════════════════════════════════════════════════════════
+
+function initGoogleAuth() {
+  // Check if we have a stored session
+  const stored = localStorage.getItem('attendease_user');
+  if (stored) {
+    currentUser = JSON.parse(stored);
+    onSignedIn();
+    return;
+  }
+
+  // Initialize Google Identity Services
+  if (typeof google !== 'undefined' && google.accounts) {
+    setupGoogleOneTap();
+  } else {
+    // GSI script not loaded yet (e.g. offline) — show login screen
+    showScreen('screen-login');
+  }
+}
+
+function setupGoogleOneTap() {
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: true,         // auto sign-in if only one account was used before
+    cancel_on_tap_outside: false,
+  });
+
+  // Try silent sign-in first via One Tap
+  google.accounts.id.prompt((notification) => {
+    // If One Tap is dismissed or not shown, fall through to login screen
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      showScreen('screen-login');
+    }
+  });
+}
+
+function signInWithGoogle() {
+  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
+    // ── DEMO MODE: no real Client ID configured ──
+    // Simulate a Google sign-in so teachers can test the full flow
+    // without setting up OAuth. Remove this block in production.
+    const demoProfiles = [
+      { id: 'demo_teacher_001', name: 'Demo Teacher', email: 'teacher@school.edu.ph', picture: '', given_name: 'Demo' },
+    ];
+    currentUser = demoProfiles[0];
+    localStorage.setItem('attendease_user', JSON.stringify(currentUser));
+    onSignedIn();
+    toast('👤 Demo mode — add your Google Client ID for real login');
+    return;
+  }
+
+  // Real Google sign-in: use the button flow
+  google.accounts.id.prompt();
+}
+
+function handleGoogleCredential(response) {
+  // Decode the JWT credential
+  const payload = parseJwt(response.credential);
+  currentUser = {
+    id: payload.sub,           // unique Google user ID — used as data namespace
+    name: payload.name,
+    email: payload.email,
+    picture: payload.picture,
+    given_name: payload.given_name,
+  };
+  localStorage.setItem('attendease_user', JSON.stringify(currentUser));
+  onSignedIn();
+}
+
+function parseJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(atob(base64));
+}
+
+function onSignedIn() {
+  // Load this teacher's private data
+  loadDB();
+  // Update UI
+  updateUserBar();
+  showScreen('screen-home');
+}
+
+function updateUserBar() {
+  if (!currentUser) return;
+  document.getElementById('user-display-name').textContent = currentUser.name;
+  document.getElementById('user-display-email').textContent = currentUser.email;
+  const avatarEl = document.getElementById('user-avatar-el');
+  if (currentUser.picture) {
+    avatarEl.innerHTML = `<img src="${currentUser.picture}" alt="${currentUser.name}">`;
+  } else {
+    avatarEl.textContent = (currentUser.given_name || currentUser.name || 'T').charAt(0).toUpperCase();
+  }
+  // Update greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greetEl = document.getElementById('home-greeting');
+  if (greetEl) greetEl.textContent = `${greeting}, ${currentUser.given_name || currentUser.name}`;
+}
+
+function signOut() {
+  showModal('Sign out?', `
+    <p style="color:var(--text2);font-size:14px;margin-bottom:20px">Your data stays saved locally. Sign back in anytime to access it.</p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px" onclick="confirmSignOut()">Sign Out</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+}
+
+function confirmSignOut() {
+  closeModalForce();
+  // Revoke Google session (if GSI is loaded)
+  if (currentUser && typeof google !== 'undefined' && google.accounts) {
+    google.accounts.id.revoke(currentUser.email, () => {});
+    google.accounts.id.disableAutoSelect();
+  }
+  localStorage.removeItem('attendease_user');
+  currentUser = null;
+  db = { sections: [], students: [], records: [] };
+  showScreen('screen-login');
+  toast('👋 Signed out successfully');
+}
+
+// ══════════════════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════════════════
+function updateHome() {
+  const d = new Date();
+  document.getElementById('home-date').textContent = d.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('stat-sections').textContent = db.sections.length;
+  document.getElementById('stat-students').textContent = db.students.length;
+  updateUserBar();
+
+  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  const syncCard = document.getElementById('sync-card');
+  const syncDesc = document.getElementById('sync-desc');
+  if (pending.length > 0) {
+    syncCard.style.opacity = '1';
+    syncDesc.textContent = `${pending.length} session(s) pending`;
+  } else {
+    syncCard.style.opacity = '0.5';
+    syncDesc.textContent = 'No pending data';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// SECTIONS
+// ══════════════════════════════════════════════════════════
+function renderSections() {
+  const list = document.getElementById('sections-list');
+  if (db.sections.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><div class="empty-text">No sections yet</div><div class="empty-sub">Tap "+ Add" to create your first section, or use Import to upload your masterlist.</div></div>`;
+    return;
+  }
+  list.innerHTML = db.sections.map(sec => {
+    const count = db.students.filter(s => s.sectionId === sec.id).length;
+    const initials = sec.name.slice(0,2).toUpperCase();
+    return `<div class="section-item">
+      <div class="section-avatar" onclick="openSection('${sec.id}')">${initials}</div>
+      <div class="section-info" onclick="openSection('${sec.id}')">
+        <div class="section-name">${sec.name}</div>
+        <div class="section-count">${sec.subject ? sec.subject + ' • ' : ''}${count} student${count !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="section-actions">
+        <button class="icon-btn" onclick="editSection('${sec.id}')">✏️</button>
+        <button class="icon-btn danger" onclick="deleteSection('${sec.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSection(id) {
+  currentSectionId = id;
+  const sec = db.sections.find(s => s.id === id);
+  document.getElementById('students-title').textContent = sec.name;
+  showScreen('screen-students');
+}
+
+function showAddSection(editId=null) {
+  document.getElementById('input-section-name').value = '';
+  document.getElementById('input-section-subject').value = '';
+  document.getElementById('editing-section-id').value = '';
+  document.getElementById('add-section-title').textContent = 'New Section';
+  if (editId) {
+    const sec = db.sections.find(s => s.id === editId);
+    document.getElementById('input-section-name').value = sec.name;
+    document.getElementById('input-section-subject').value = sec.subject || '';
+    document.getElementById('editing-section-id').value = editId;
+    document.getElementById('add-section-title').textContent = 'Edit Section';
+  }
+  showScreen('screen-add-section');
+}
+
+function editSection(id) { showAddSection(id); }
+
+function saveSection() {
+  const name = document.getElementById('input-section-name').value.trim();
+  const subject = document.getElementById('input-section-subject').value.trim();
+  const editId = document.getElementById('editing-section-id').value;
+  if (!name) { toast('⚠️ Section name is required'); return; }
+  if (editId) {
+    const sec = db.sections.find(s => s.id === editId);
+    sec.name = name; sec.subject = subject;
+    toast('✅ Section updated');
+  } else {
+    db.sections.push({ id: uid(), name, subject });
+    toast('✅ Section added');
+  }
+  saveDB(); showScreen('screen-sections');
+}
+
+function deleteSection(id) {
+  const sec = db.sections.find(s => s.id === id);
+  const count = db.students.filter(s => s.sectionId === id).length;
+  showModal(`Delete ${sec.name}?`,
+    `<p style="color:var(--text2);font-size:14px;margin-bottom:20px">This will also delete ${count} student${count!==1?'s':''} and all their records. This cannot be undone.</p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px" onclick="confirmDeleteSection('${id}')">Yes, Delete</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>`);
+}
+
+function confirmDeleteSection(id) {
+  db.sections = db.sections.filter(s => s.id !== id);
+  db.students = db.students.filter(s => s.sectionId !== id);
+  db.records = db.records.filter(r => r.sectionId !== id);
+  saveDB(); closeModalForce(); renderSections();
+  toast('🗑️ Section deleted');
+}
+
+// ══════════════════════════════════════════════════════════
+// STUDENTS
+// ══════════════════════════════════════════════════════════
+function renderStudents() {
+  const list = document.getElementById('students-list');
+  const students = db.students.filter(s => s.sectionId === currentSectionId);
+  if (students.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">No students yet</div><div class="empty-sub">Tap "+ Add" to add students, or use Import to upload from Excel.</div></div>`;
+    return;
+  }
+  list.innerHTML = students.map((s, i) => `
+    <div class="student-item">
+      <div class="student-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="student-name">${s.lastName}, ${s.firstName}</div>
+      <div class="section-actions">
+        <button class="icon-btn" onclick="editStudent('${s.id}')">✏️</button>
+        <button class="icon-btn danger" onclick="deleteStudent('${s.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function showAddStudent(editId=null) {
+  document.getElementById('input-last-name').value = '';
+  document.getElementById('input-first-name').value = '';
+  document.getElementById('editing-student-id').value = '';
+  document.getElementById('add-student-title').textContent = 'Add Student';
+  if (editId) {
+    const st = db.students.find(s => s.id === editId);
+    document.getElementById('input-last-name').value = st.lastName;
+    document.getElementById('input-first-name').value = st.firstName;
+    document.getElementById('editing-student-id').value = editId;
+    document.getElementById('add-student-title').textContent = 'Edit Student';
+  }
+  showScreen('screen-add-student');
+}
+
+function editStudent(id) { showAddStudent(id); }
+
+function saveStudent() {
+  const last = document.getElementById('input-last-name').value.trim();
+  const first = document.getElementById('input-first-name').value.trim();
+  const editId = document.getElementById('editing-student-id').value;
+  if (!last || !first) { toast('⚠️ Both names are required'); return; }
+  if (editId) {
+    const st = db.students.find(s => s.id === editId);
+    st.lastName = last; st.firstName = first;
+    toast('✅ Student updated');
+  } else {
+    db.students.push({ id: uid(), sectionId: currentSectionId, lastName: last, firstName: first });
+    toast('✅ Student added');
+  }
+  saveDB(); showScreen('screen-students');
+}
+
+function deleteStudent(id) {
+  const st = db.students.find(s => s.id === id);
+  showModal(`Remove ${st.firstName} ${st.lastName}?`,
+    `<p style="color:var(--text2);font-size:14px;margin-bottom:20px">All attendance records for this student will also be deleted.</p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px" onclick="confirmDeleteStudent('${id}')">Yes, Remove</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>`);
+}
+
+function confirmDeleteStudent(id) {
+  db.students = db.students.filter(s => s.id !== id);
+  db.records = db.records.filter(r => r.studentId !== id);
+  saveDB(); closeModalForce(); renderStudents();
+  toast('🗑️ Student removed');
+}
+
+// ══════════════════════════════════════════════════════════
+// TAKE ATTENDANCE
+// ══════════════════════════════════════════════════════════
+function renderTakeSelect() {
+  const list = document.getElementById('take-section-list');
+  if (db.sections.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><div class="empty-text">No sections yet</div><div class="empty-sub">Go to Manage Sections to add your first section and students.</div></div>`;
+    return;
+  }
+  list.innerHTML = `<div class="form-label" style="padding:0 0 12px">Select Section</div>` +
+    db.sections.map(sec => {
+      const count = db.students.filter(s => s.sectionId === sec.id).length;
+      if (count === 0) return '';
+      return `<div class="section-select-item" onclick="startAttendance('${sec.id}')">
+        <div class="section-avatar" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:15px">${sec.name.slice(0,2).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600">${sec.name}</div>
+          <div style="font-size:12px;color:var(--text3)">${count} students</div>
+        </div>
+        <span style="color:var(--text3)">→</span>
+      </div>`;
+    }).join('');
+}
+
+function startAttendance(sectionId) {
+  currentSectionId = sectionId;
+  sessionStudents = db.students.filter(s => s.sectionId === sectionId);
+  if (sessionStudents.length === 0) { toast('⚠️ No students in this section'); return; }
+  sessionAnswers = {};
+  currentStudentIndex = 0;
+  const sec = db.sections.find(s => s.id === sectionId);
+  document.getElementById('take-section-name').textContent = sec.name + (sec.subject ? ` • ${sec.subject}` : '');
+  document.getElementById('take-date-label').textContent = fmtDate(today());
+  showScreen('screen-take-attendance');
+  renderFlashcard();
+}
+
+function renderFlashcard() {
+  const st = sessionStudents[currentStudentIndex];
+  const total = sessionStudents.length;
+  document.getElementById('flashcard-num').textContent = `Student ${currentStudentIndex+1} of ${total}`;
+  document.getElementById('flashcard-name').textContent = `${st.lastName}, ${st.firstName}`;
+  document.getElementById('take-progress').style.width = `${((currentStudentIndex) / total) * 100}%`;
+  document.getElementById('take-counter').textContent = `${Object.keys(sessionAnswers).length} marked • ${total - Object.keys(sessionAnswers).length} remaining`;
+
+  document.querySelectorAll('.att-btn').forEach(b => b.classList.remove('selected'));
+  if (sessionAnswers[st.id]) {
+    const map = { P: 'btn-present', A: 'btn-absent', E: 'btn-excused' };
+    document.querySelector('.' + map[sessionAnswers[st.id]])?.classList.add('selected');
+  }
+
+  const allMarked = sessionStudents.every(s => sessionAnswers[s.id]);
+  document.getElementById('btn-finish').style.display = allMarked ? 'block' : 'none';
+  document.getElementById('btn-prev').style.display = currentStudentIndex > 0 ? 'block' : 'none';
+}
+
+function markAttendance(status) {
+  const st = sessionStudents[currentStudentIndex];
+  sessionAnswers[st.id] = status;
+  setTimeout(() => {
+    if (currentStudentIndex < sessionStudents.length - 1) {
+      currentStudentIndex++;
+      renderFlashcard();
+    } else {
+      renderFlashcard();
+    }
+  }, 150);
+}
+
+function prevStudent() {
+  if (currentStudentIndex > 0) { currentStudentIndex--; renderFlashcard(); }
+}
+
+function skipStudent() {
+  if (currentStudentIndex < sessionStudents.length - 1) { currentStudentIndex++; renderFlashcard(); }
+}
+
+function finishAttendance() {
+  const unmarked = sessionStudents.filter(s => !sessionAnswers[s.id]);
+  if (unmarked.length > 0) {
+    showModal('Unmarked Students', `<p style="color:var(--text2);font-size:14px;margin-bottom:16px">${unmarked.length} student(s) not yet marked. Mark them as absent?</p>
+      <button class="btn-primary" style="margin-bottom:10px" onclick="markUnmarkedAbsent()">Mark Absent & Finish</button>
+      <button class="btn-secondary" onclick="closeModalForce()">Go Back & Mark</button>`);
+    return;
+  }
+  saveSession();
+}
+
+function markUnmarkedAbsent() {
+  sessionStudents.forEach(s => { if (!sessionAnswers[s.id]) sessionAnswers[s.id] = 'A'; });
+  closeModalForce(); saveSession();
+}
+
+function saveSession() {
+  const dateStr = today();
+  sessionStudents.forEach(s => {
+    db.records.push({ id: uid(), sectionId: currentSectionId, date: dateStr, studentId: s.id, status: sessionAnswers[s.id] || 'A' });
+  });
+  saveDB();
+
+  // Add to this teacher's pending sync queue
+  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  pending.push({ sectionId: currentSectionId, date: dateStr });
+  localStorage.setItem(pendingKey(), JSON.stringify(pending));
+
+  const p = Object.values(sessionAnswers).filter(v => v === 'P').length;
+  const a = Object.values(sessionAnswers).filter(v => v === 'A').length;
+  const e = Object.values(sessionAnswers).filter(v => v === 'E').length;
+  const sec = db.sections.find(s => s.id === currentSectionId);
+  document.getElementById('summary-section').textContent = sec.name;
+  document.getElementById('summary-date').textContent = fmtDate(dateStr);
+  document.getElementById('sum-present').textContent = p;
+  document.getElementById('sum-absent').textContent = a;
+  document.getElementById('sum-excused').textContent = e;
+  showScreen('screen-summary');
+}
+
+// ══════════════════════════════════════════════════════════
+// RECORDS
+// ══════════════════════════════════════════════════════════
+function filterRecords(f, el) {
+  recordsFilter = f;
+  document.querySelectorAll('#screen-records .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderRecords();
+}
+
+function renderRecords() {
+  const list = document.getElementById('records-list');
+  let records = [...db.records].sort((a,b) => b.date.localeCompare(a.date));
+  if (recordsFilter !== 'all') records = records.filter(r => r.status === recordsFilter);
+  if (records.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No records yet</div><div class="empty-sub">Take attendance to see records here.</div></div>`;
+    return;
+  }
+  const byDate = {};
+  records.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
+  const icons = { P: '✅', A: '❌', E: '📝' };
+  list.innerHTML = Object.entries(byDate).map(([date, recs]) => `
+    <div class="record-date-group">
+      <div class="record-date-label">${fmtDate(date)}</div>
+      ${recs.map(r => {
+        const st = db.students.find(s => s.id === r.studentId);
+        const sec = db.sections.find(s => s.id === r.sectionId);
+        if (!st) return '';
+        return `<div class="record-item">
+          <div class="record-status ${r.status}">${icons[r.status]}</div>
+          <div class="record-info">
+            <div class="record-name">${st.lastName}, ${st.firstName}</div>
+            <div class="record-section">${sec ? sec.name : ''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// ABSENCES
+// ══════════════════════════════════════════════════════════
+function filterSection(f, el) {
+  absenceSectionFilter = f;
+  document.querySelectorAll('#screen-absences .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderAbsences();
+}
+
+function renderAbsences() {
+  const list = document.getElementById('absence-list');
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+  let students = db.students.map(s => ({ ...s, absences: absenceCounts[s.id] || 0 }));
+  students.sort((a,b) => b.absences - a.absences);
+  if (absenceSectionFilter === 'warn') students = students.filter(s => s.absences >= 3 && s.absences < 9);
+  if (absenceSectionFilter === 'danger') students = students.filter(s => s.absences >= 9);
+  if (students.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">All clear!</div><div class="empty-sub">No students with absences in this filter.</div></div>`;
+    return;
+  }
+  list.innerHTML = students.map(s => {
+    const sec = db.sections.find(sec => sec.id === s.sectionId);
+    const pct = Math.min((s.absences / 10) * 100, 100);
+    let color = s.absences >= 10 ? '#ff1744' : s.absences >= 9 ? '#ff6b6b' : s.absences >= 3 ? '#ffab40' : 'var(--accent)';
+    let badge = '';
+    if (s.absences >= 10) badge = `<span class="badge badge-drop">DROPPED</span>`;
+    else if (s.absences >= 9) badge = `<span class="badge badge-danger">CRITICAL</span>`;
+    else if (s.absences >= 3) badge = `<span class="badge badge-warn">WARNING</span>`;
+    return `<div class="absence-item">
+      <div class="absence-bar-wrap">
+        <div class="absence-name">${s.lastName}, ${s.firstName} ${badge}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${sec ? sec.name : ''}</div>
+        <div class="absence-bar-bg"><div class="absence-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>
+      <div class="absence-count" style="color:${color}">${s.absences}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// IMPORT / EXPORT
+// ══════════════════════════════════════════════════════════
+function importExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      let imported = 0; let newSections = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const sectionName = String(row[0] || '').trim();
+        const lastName = String(row[1] || '').trim();
+        const firstName = String(row[2] || '').trim();
+        if (!sectionName || !lastName || !firstName) continue;
+        let sec = db.sections.find(s => s.name.toLowerCase() === sectionName.toLowerCase());
+        if (!sec) { sec = { id: uid(), name: sectionName, subject: '' }; db.sections.push(sec); newSections++; }
+        const exists = db.students.find(s => s.sectionId === sec.id && s.lastName.toLowerCase() === lastName.toLowerCase() && s.firstName.toLowerCase() === firstName.toLowerCase());
+        if (!exists) { db.students.push({ id: uid(), sectionId: sec.id, lastName, firstName }); imported++; }
+      }
+      saveDB();
+      toast(`✅ Imported ${imported} students, ${newSections} new sections`);
+      event.target.value = '';
+    } catch(err) { toast('❌ Error reading file. Check format.'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportMasterlist() {
+  const wb = XLSX.utils.book_new();
+  const rows = [['Section', 'Last Name', 'First Name']];
+  db.sections.forEach(sec => {
+    db.students.filter(s => s.sectionId === sec.id).forEach(s => rows.push([sec.name, s.lastName, s.firstName]));
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Masterlist');
+  XLSX.writeFile(wb, 'Masterlist.xlsx');
+  toast('📥 Masterlist exported');
+}
+
+function exportAttendance() {
+  const wb = XLSX.utils.book_new();
+  db.sections.forEach(sec => {
+    const students = db.students.filter(s => s.sectionId === sec.id);
+    const dates = [...new Set(db.records.filter(r => r.sectionId === sec.id).map(r => r.date))].sort();
+    const header = ['Student Name', ...dates.map(fmtDate), 'Total Absences'];
+    const rows = [header];
+    students.forEach(st => {
+      const row = [`${st.lastName}, ${st.firstName}`];
+      let absences = 0;
+      dates.forEach(d => {
+        const rec = db.records.find(r => r.studentId === st.id && r.date === d);
+        const status = rec ? rec.status : '-';
+        row.push(status); if (status === 'A') absences++;
+      });
+      row.push(absences); rows.push(row);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, sec.name.slice(0,31));
+  });
+  if (wb.SheetNames.length === 0) { toast('⚠️ No records to export'); return; }
+  XLSX.writeFile(wb, 'Attendance_Records.xlsx');
+  toast('📥 Attendance exported');
+}
+
+function exportAbsenceSummary() {
+  const wb = XLSX.utils.book_new();
+  const rows = [['Section', 'Student Name', 'Total Absences', 'Alert Level']];
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => { absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1; });
+  db.sections.forEach(sec => {
+    db.students.filter(s => s.sectionId === sec.id).forEach(s => {
+      const count = absenceCounts[s.id] || 0;
+      let level = count >= 10 ? 'DROPPED' : count >= 9 ? 'CRITICAL' : count >= 3 ? 'WARNING' : 'OK';
+      rows.push([sec.name, `${s.lastName}, ${s.firstName}`, count, level]);
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Absence Summary');
+  XLSX.writeFile(wb, 'Absence_Summary.xlsx');
+  toast('📥 Summary exported');
+}
+
+// ── SYNC PLACEHOLDER ──
+function syncPending() {
+  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  if (pending.length === 0) { toast('☁️ Nothing to sync'); return; }
+  toast('⚠️ Google Sheets sync coming in Stage 3!');
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT — wait for GSI to load, then check auth
+// ══════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  // Give GSI script a moment to initialize
+  setTimeout(initGoogleAuth, 800);
+});
+</script>
+</body>
+</html>
