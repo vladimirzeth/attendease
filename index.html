@@ -1326,20 +1326,7 @@ function initGoogleAuth() {
 }
 
 function setupGoogleOneTap() {
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredential,
-    auto_select: true,         // auto sign-in if only one account was used before
-    cancel_on_tap_outside: false,
-  });
-
-  // Try silent sign-in first via One Tap
-  google.accounts.id.prompt((notification) => {
-    // If One Tap is dismissed or not shown, fall through to login screen
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      showScreen('screen-login');
-    }
-  });
+  showScreen('screen-login');
 }
 
 function signInWithGoogle() {
@@ -1358,7 +1345,35 @@ function signInWithGoogle() {
   }
 
   // Real Google sign-in: use the button flow
-  google.accounts.id.prompt();
+ // Use popup flow — more reliable than One Tap
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'openid email profile',
+    callback: (tokenResponse) => {
+      if (tokenResponse.error) {
+        toast('❌ Sign-in failed. Please try again.');
+        return;
+      }
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+      })
+      .then(r => r.json())
+      .then(info => {
+        currentUser = {
+          id: info.sub,
+          name: info.name,
+          email: info.email,
+          picture: info.picture,
+          given_name: info.given_name,
+          access_token: tokenResponse.access_token,
+        };
+        localStorage.setItem('attendease_user', JSON.stringify(currentUser));
+        onSignedIn();
+      })
+      .catch(() => toast('❌ Could not fetch profile. Try again.'));
+    },
+  });
+  client.requestAccessToken();
 }
 
 function handleGoogleCredential(response) {
