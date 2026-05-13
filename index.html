@@ -2624,7 +2624,7 @@ function onSignedIn() {
   }
 }
 
-function updateUserBar() {
+/*function updateUserBar() {
   if (!currentUser) return;
   document.getElementById('home-hero').textContent = currentUser.name;
   //document.getElementById('user-display-email').textContent = currentUser.email;
@@ -2640,6 +2640,7 @@ function updateUserBar() {
   const greetEl = document.getElementById('home-greeting');
   if (greetEl) greetEl.textContent = `${greeting}, ${currentUser.given_name || currentUser.name}`;
 }
+*/
 
 function signOut() {
   showModal('Sign out?', `
