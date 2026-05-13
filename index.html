@@ -993,6 +993,269 @@
   .weekly-section-name { font-size: 14px; font-weight: 500; }
   .weekly-section-stats { font-size: 12px; color: var(--text3); }
 
+  /* ── BOTTOM NAV (Mobile) ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--surface);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    height: 100%;
+    cursor: pointer;
+    transition: color 0.2s;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: none;
+    background: transparent;
+    font-family: 'Sora', sans-serif;
+    position: relative;
+  }
+  .bottom-nav-item.active { color: var(--accent); }
+  .bottom-nav-item .nav-icon { font-size: 22px; line-height: 1; }
+  .bottom-nav-item .nav-notif {
+    position: absolute;
+    top: 8px; right: calc(50% - 18px);
+    background: var(--absent);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px; height: 16px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── SIDE DRAWER ── */
+  .drawer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+    z-index: 90;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .drawer-overlay.open {
+    display: block;
+    opacity: 1;
+  }
+  .drawer {
+    position: fixed;
+    top: 0; left: -280px;
+    width: 280px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    z-index: 91;
+    display: flex;
+    flex-direction: column;
+    transition: left 0.25s ease;
+    overflow-y: auto;
+  }
+  .drawer.open { left: 0; }
+  .drawer-header {
+    padding: 48px 24px 24px;
+    background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .drawer-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .drawer-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .drawer-name { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .drawer-email { font-size: 12px; color: var(--text3); }
+  .drawer-nav { flex: 1; padding: 16px 0; }
+  .drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-family: 'Sora', sans-serif;
+  }
+  .drawer-item:hover { background: var(--surface2); color: var(--text); }
+  .drawer-item.active { color: var(--accent); background: rgba(79,195,247,0.06); }
+  .drawer-item-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+  .drawer-divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 8px 24px;
+  }
+  .drawer-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 24px 4px;
+  }
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  /* ── PC SIDEBAR (≥768px) ── */
+  @media (min-width: 768px) {
+    .bottom-nav { display: none; }
+    body { display: flex; }
+    .pc-sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+    .pc-sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .pc-sidebar-logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+    }
+    .pc-sidebar-logo-text span { color: var(--accent2); }
+    .pc-sidebar-logo-sub {
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .pc-sidebar-user {
+      padding: 16px 24px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pc-sidebar-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .pc-sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .pc-sidebar-nav { flex: 1; padding: 12px 0; }
+    .pc-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-family: 'Sora', sans-serif;
+      border-radius: 0;
+      position: relative;
+    }
+    .pc-sidebar-item:hover { background: var(--surface2); color: var(--text); }
+    .pc-sidebar-item.active {
+      color: var(--accent);
+      background: rgba(79,195,247,0.06);
+      border-right: 2px solid var(--accent);
+    }
+    .pc-sidebar-item-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .pc-sidebar-item .nav-notif {
+      position: absolute;
+      right: 16px; top: 50%; transform: translateY(-50%);
+      background: var(--absent);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      min-width: 18px; height: 18px;
+      border-radius: 9px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .pc-sidebar-divider {
+      height: 0.5px;
+      background: var(--border);
+      margin: 8px 16px;
+    }
+    .pc-sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 8px 24px 4px;
+    }
+    .pc-sidebar-footer {
+      padding: 16px;
+      border-top: 0.5px solid var(--border);
+    }
+    .main-content {
+      margin-left: 240px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .screen { padding-bottom: 0; }
+  }
+
+  /* Mobile: add padding for bottom nav */
+  @media (max-width: 767px) {
+    .pc-sidebar { display: none; }
+    .main-content { margin-left: 0; }
+    .screen { padding-bottom: 64px; }
+  }
+
   /* ── AUTH LOADING ── */
   #screen-auth-loading {
     align-items: center;
@@ -1015,6 +1278,145 @@
 </style>
 </head>
 <body>
+
+<!-- ── PC SIDEBAR ── -->
+<div class="pc-sidebar" id="pc-sidebar" style="display:none;">
+  <div class="pc-sidebar-logo">
+    <div class="pc-sidebar-logo-text">Attend<span>Ease</span></div>
+    <div class="pc-sidebar-logo-sub">CASP Smart Attendance</div>
+  </div>
+  <div class="pc-sidebar-user" id="pc-sidebar-user">
+    <div class="pc-sidebar-avatar" id="pc-sidebar-avatar"></div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="pc-sidebar-name"></div>
+      <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="pc-sidebar-email"></div>
+    </div>
+  </div>
+  <nav class="pc-sidebar-nav">
+    <div class="pc-sidebar-section-label">Main</div>
+    <button class="pc-sidebar-item active" id="pc-nav-home" onclick="showScreen('screen-home')">
+      <span class="pc-sidebar-item-icon">🏠</span> Home
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-calendar" onclick="showScreen('screen-calendar')">
+      <span class="pc-sidebar-item-icon">📅</span> Calendar
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-attendance" onclick="showScreen('screen-take-select')">
+      <span class="pc-sidebar-item-icon">✅</span> Take Attendance
+    </button>
+    <div class="pc-sidebar-divider"></div>
+    <div class="pc-sidebar-section-label">Reports</div>
+    <button class="pc-sidebar-item" id="pc-nav-records" onclick="showScreen('screen-records')">
+      <span class="pc-sidebar-item-icon">📅</span> Records
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-absences" onclick="showScreen('screen-absences')">
+      <span class="pc-sidebar-item-icon">🚨</span> Absence Summary
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-weekly" onclick="showScreen('screen-weekly-report')">
+      <span class="pc-sidebar-item-icon">📊</span> Weekly Report
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-notifications" onclick="showScreen('screen-notifications')">
+      <span class="pc-sidebar-item-icon">🔔</span> Notifications
+      <span class="nav-notif" id="pc-notif-badge">0</span>
+    </button>
+    <div class="pc-sidebar-divider"></div>
+    <div class="pc-sidebar-section-label">Data</div>
+    <button class="pc-sidebar-item" id="pc-nav-sections" onclick="showScreen('screen-sections')">
+      <span class="pc-sidebar-item-icon">🏫</span> Manage Sections
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-import" onclick="showScreen('screen-import-export')">
+      <span class="pc-sidebar-item-icon">📥</span> Import / Export
+    </button>
+    <button class="pc-sidebar-item" onclick="syncPending()">
+      <span class="pc-sidebar-item-icon">☁️</span> Sync Now
+    </button>
+  </nav>
+  <div class="pc-sidebar-footer">
+    <button class="pc-sidebar-item" onclick="showScreen('screen-settings')" style="padding:10px 16px;border-radius:8px;">
+      <span class="pc-sidebar-item-icon">⚙️</span> Settings
+    </button>
+    <button class="pc-sidebar-item" onclick="signOut()" style="padding:10px 16px;border-radius:8px;color:var(--absent);">
+      <span class="pc-sidebar-item-icon">🚪</span> Sign Out
+    </button>
+  </div>
+</div>
+
+<!-- ── SIDE DRAWER (Mobile Hamburger) ── -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="drawer-avatar"></div>
+    <div class="drawer-name" id="drawer-name"></div>
+    <div class="drawer-email" id="drawer-email"></div>
+  </div>
+  <nav class="drawer-nav">
+    <div class="drawer-section-label">Main</div>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-home')">
+      <span class="drawer-item-icon">🏠</span> Home
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-calendar')">
+      <span class="drawer-item-icon">📅</span> Calendar
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-take-select')">
+      <span class="drawer-item-icon">✅</span> Take Attendance
+    </button>
+    <div class="drawer-divider"></div>
+    <div class="drawer-section-label">Reports</div>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-records')">
+      <span class="drawer-item-icon">📅</span> Records
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-absences')">
+      <span class="drawer-item-icon">🚨</span> Absence Summary
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-weekly-report')">
+      <span class="drawer-item-icon">📊</span> Weekly Report
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-notifications')">
+      <span class="drawer-item-icon">🔔</span> Notifications
+    </button>
+    <div class="drawer-divider"></div>
+    <div class="drawer-section-label">Data</div>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-sections')">
+      <span class="drawer-item-icon">🏫</span> Manage Sections
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-import-export')">
+      <span class="drawer-item-icon">📥</span> Import / Export
+    </button>
+    <button class="drawer-item" onclick="closeDrawer();syncPending()">
+      <span class="drawer-item-icon">☁️</span> Sync Now
+    </button>
+    <div class="drawer-divider"></div>
+    <button class="drawer-item" onclick="closeDrawer();showScreen('screen-settings')">
+      <span class="drawer-item-icon">⚙️</span> Settings
+    </button>
+    <button class="drawer-item" style="color:var(--absent);" onclick="closeDrawer();signOut()">
+      <span class="drawer-item-icon">🚪</span> Sign Out
+    </button>
+  </nav>
+</div>
+
+<!-- ── BOTTOM NAV (Mobile) ── -->
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="bottom-nav-item active" id="bn-home" onclick="showScreen('screen-home')">
+    <span class="nav-icon">🏠</span>
+    <span>Home</span>
+  </button>
+  <button class="bottom-nav-item" id="bn-calendar" onclick="showScreen('screen-calendar')">
+    <span class="nav-icon">📅</span>
+    <span>Calendar</span>
+  </button>
+  <button class="bottom-nav-item" id="bn-notif" onclick="showScreen('screen-notifications')">
+    <span class="nav-icon">🔔</span>
+    <span class="nav-notif" id="bn-notif-badge">0</span>
+    <span>Alerts</span>
+  </button>
+  <button class="bottom-nav-item" id="bn-settings" onclick="showScreen('screen-settings')">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </button>
+</div>
+
+<!-- ── MAIN CONTENT WRAPPER ── -->
+<div class="main-content" id="main-content">
 
 <!-- ── AUTH LOADING ── -->
 <div class="screen active" id="screen-auth-loading">
@@ -1060,11 +1462,12 @@
   <button class="signout-btn" onclick="signOut()">Sign out</button>
   </div>
   <div class="home-header">
-    <div class="home-greeting" id="home-greeting">Welcome back</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div class="home-title">AttendEase 📋</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <button onclick="openDrawer()" style="background:transparent;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:0;line-height:1;display:flex;align-items:center;" id="hamburger-btn">☰</button>
       <div id="sync-status-badge" style="font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);border:0.5px solid var(--border);color:var(--text3);display:none;">⏳ Syncing...</div>
     </div>
+    <div class="home-greeting" id="home-greeting">Welcome back</div>
+    <div class="home-title">AttendEase 📋</div>
     <div class="home-date" id="home-date"></div>
   </div>
   <div class="home-stats" id="home-stats">
@@ -1494,6 +1897,8 @@
 <!-- ── TOAST ── -->
 <div class="toast" id="toast"></div>
 
+</div> <!-- end .main-content -->
+
 <script>
 // ══════════════════════════════════════════════════════════
 // STAGE 2 — Google Login + Per-Teacher Data Isolation
@@ -1567,8 +1972,95 @@ function showScreen(id) {
   if (id === 'screen-take-select') renderTakeSelect();
   if (id === 'screen-records') { recordsFilter='all'; document.querySelectorAll('#screen-records .tab').forEach((t,i)=>t.classList.toggle('active',i===0)); renderRecords(); }
   if (id === 'screen-settings') showSettingsScreen();
+  if (id === 'screen-calendar') renderCalendar();
+  updateNavState(id);
 }
 function goHome() { showScreen('screen-home'); }
+
+// ── UPDATE NAV ACTIVE STATE ──
+function updateNavState(screenId) {
+  // Bottom nav
+  const bnMap = {
+    'screen-home': 'bn-home',
+    'screen-calendar': 'bn-calendar',
+    'screen-notifications': 'bn-notif',
+    'screen-settings': 'bn-settings',
+  };
+  document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+  const bnActive = bnMap[screenId];
+  if (bnActive) document.getElementById(bnActive)?.classList.add('active');
+
+  // PC sidebar
+  const pcMap = {
+    'screen-home': 'pc-nav-home',
+    'screen-calendar': 'pc-nav-calendar',
+    'screen-take-select': 'pc-nav-attendance',
+    'screen-records': 'pc-nav-records',
+    'screen-absences': 'pc-nav-absences',
+    'screen-weekly-report': 'pc-nav-weekly',
+    'screen-notifications': 'pc-nav-notifications',
+    'screen-sections': 'pc-nav-sections',
+    'screen-import-export': 'pc-nav-import',
+  };
+  document.querySelectorAll('.pc-sidebar-item').forEach(b => b.classList.remove('active'));
+  const pcActive = pcMap[screenId];
+  if (pcActive) document.getElementById(pcActive)?.classList.add('active');
+}
+
+// ── DRAWER ──
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── SHOW NAV (called after login) ──
+function showNav() {
+  const isMobile = window.innerWidth < 768;
+  if (isMobile) {
+    document.getElementById('bottom-nav').style.display = 'flex';
+    document.getElementById('pc-sidebar').style.display = 'none';
+  } else {
+    document.getElementById('bottom-nav').style.display = 'none';
+    document.getElementById('pc-sidebar').style.display = 'flex';
+  }
+  updateNavUserInfo();
+}
+
+// ── UPDATE NAV USER INFO ──
+function updateNavUserInfo() {
+  if (!currentUser) return;
+
+  // Drawer
+  const drawerAvatar = document.getElementById('drawer-avatar');
+  document.getElementById('drawer-name').textContent = currentUser.name;
+  document.getElementById('drawer-email').textContent = currentUser.email;
+  if (currentUser.picture) {
+    drawerAvatar.innerHTML = `<img src="${currentUser.picture}">`;
+  } else {
+    drawerAvatar.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
+  }
+
+  // PC Sidebar
+  const pcAvatar = document.getElementById('pc-sidebar-avatar');
+  document.getElementById('pc-sidebar-name').textContent = getDisplayName() || currentUser.name;
+  document.getElementById('pc-sidebar-email').textContent = currentUser.email;
+  if (currentUser.picture) {
+    pcAvatar.innerHTML = `<img src="${currentUser.picture}">`;
+  } else {
+    pcAvatar.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
+  }
+}
+
+// ── HANDLE RESIZE ──
+window.addEventListener('resize', () => {
+  if (currentUser) showNav();
+});
 
 // ══════════════════════════════════════════════════════════
 // GOOGLE AUTH
@@ -1665,6 +2157,7 @@ function parseJwt(token) {
 function onSignedIn() {
   loadDB();
   updateUserBar();
+  showNav();
   showScreen('screen-home');
   setupSyncInterval();
   updateNotifBadge();
@@ -3007,13 +3500,27 @@ function getAlertStudents() {
 function updateNotifBadge() {
   const { dropped, critical, warning } = getAlertStudents();
   const total = dropped.length + critical.length + warning.length;
+  const totalStr = total > 99 ? '99+' : String(total);
+
+  // Home bell badge
   const badge = document.getElementById('notif-badge');
-  if (!badge) return;
-  if (total > 0) {
-    badge.style.display = 'flex';
-    badge.textContent = total > 99 ? '99+' : total;
-  } else {
-    badge.style.display = 'none';
+  if (badge) {
+    badge.style.display = total > 0 ? 'flex' : 'none';
+    badge.textContent = totalStr;
+  }
+
+  // Bottom nav badge
+  const bnBadge = document.getElementById('bn-notif-badge');
+  if (bnBadge) {
+    bnBadge.style.display = total > 0 ? 'flex' : 'none';
+    bnBadge.textContent = totalStr;
+  }
+
+  // PC sidebar badge
+  const pcBadge = document.getElementById('pc-notif-badge');
+  if (pcBadge) {
+    pcBadge.style.display = total > 0 ? 'flex' : 'none';
+    pcBadge.textContent = totalStr;
   }
 }
 
