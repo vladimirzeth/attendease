@@ -1215,11 +1215,12 @@
   </div>
   
   <div style="padding:0 20px 10px;display:flex;gap:10px;align-items:center;">
-    <select class="form-input" id="absence-sort" onchange="renderAbsences()" style="font-size:13px;padding:10px 14px;flex:1;">
-      <option value="absences-desc">Most Absences</option>
-      <option value="absences-asc">Least Absences</option>
-      <option value="name-asc">Name A → Z</option>
-      <option value="section">By Section</option>
+    <select class="form-input" id="absence-section-filter" onchange="renderAbsences()" style="font-size:13px;padding:10px 14px;flex:1;">
+      <option value="all">All Sections</option>
+    </select>
+    <select class="form-input" id="absence-sort" onchange="renderAbsences()" style="font-size:13px;padding:10px 14px;width:150px;">
+      <option value="absences-desc">Most First</option>
+      <option value="absences-asc">Least First</option>
     </select>
   </div>
   <div class="tabs">
@@ -2001,16 +2002,9 @@ function renderAbsences() {
  let students = db.students.map(s => ({ ...s, absences: absenceCounts[s.id] || 0 }));
   if (selectedSection !== 'all') students = students.filter(s => s.sectionId === selectedSection);
   const absSort = document.getElementById('absence-sort')?.value || 'absences-desc';
-  students.sort((a, b) => {
-    if (absSort === 'absences-desc') return b.absences - a.absences;
-    if (absSort === 'absences-asc') return a.absences - b.absences;
-    if (absSort === 'name-asc') return a.lastName.localeCompare(b.lastName);
-    if (absSort === 'section') {
-      const secA = db.sections.find(s => s.id === a.sectionId)?.name || '';
-      const secB = db.sections.find(s => s.id === b.sectionId)?.name || '';
-      return secA.localeCompare(secB);
-    }
-  });
+  students.sort((a, b) =>
+    absSort === 'absences-desc' ? b.absences - a.absences : a.absences - b.absences
+  );
   if (absenceSectionFilter === 'warn') students = students.filter(s => s.absences >= 3 && s.absences < 9);
   if (absenceSectionFilter === 'danger') students = students.filter(s => s.absences >= 9);
   if (students.length === 0) {
