@@ -2761,50 +2761,59 @@ async function syncPending() {
     const pendingSectionIds = new Set(pendingList.map(p => p.sectionId));
     const isEmptyDevice = db.sections.length === 0 && db.students.length === 0;
 
-    if (isEmptyDevice) {
-      // New device — pull everything first
-      if (badge) badge.textContent = '⬇️ Restoring your data...';
-      try {
-        const sheetData = await pullFromSheet(token, sheetId);
-        mergeSheetData(sheetData);
-        toast('📲 Data restored!');
-      } catch(pullErr) {
-        console.warn('Pull failed on new device:', pullErr);
+    // ── ALWAYS PULL FIRST ──
+    // Whether empty device or existing device, always pull from sheet first.
+    // This ensures deleted-and-cleared devices get their data back,
+    // and existing devices get any new records from other devices.
+    if (badge) badge.textContent = '⬇️ Pulling from Sheet...';
+    try {
+      const sheetData = await pullFromSheet(token, sheetId);
+
+      if (!isEmptyDevice && pendingSectionIds.size > 0) {
+        // Existing device with pending data:
+        // Only merge sheet records that don't conflict with pending local records
+        sheetData.records = sheetData.records.filter(shRec => {
+          const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
+          if (!sec) return true; // unknown section — safe to add
+          const isPendingSection = pendingSectionIds.has(sec.id);
+          if (!isPendingSection) return true; // not a pending section — safe to add
+          const st = db.students.find(s =>
+            s.sectionId === sec.id &&
+            s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+            s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
+          );
+          if (!st) return true;
+          // For pending sections: only add dates not already recorded locally
+          return !db.records.some(r => r.studentId === st.id && r.date === shRec.date);
+        });
       }
-    } else {
-      // Existing device — pull only for sections with pending data
-      // (to get any new dates from other devices for those same sections)
-      if (pendingSectionIds.size > 0) {
-        if (badge) badge.textContent = '⬇️ Checking other devices...';
-        try {
-          const sheetData = await pullFromSheet(token, sheetId);
-          // Only keep sheet records for pending sections and dates not locally present
-          sheetData.records = sheetData.records.filter(shRec => {
-            const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
-            if (!sec || !pendingSectionIds.has(sec.id)) return false;
-            const st = db.students.find(s =>
-              s.sectionId === sec.id &&
-              s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
-              s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
-            );
-            if (!st) return false;
-            // Only add if this student+date doesn't exist locally
-            return !db.records.some(r => r.studentId === st.id && r.date === shRec.date);
-          });
-          mergeSheetData(sheetData);
-        } catch(pullErr) {
-          console.warn('Pull failed:', pullErr);
-        }
+
+      mergeSheetData(sheetData);
+
+      if (isEmptyDevice) {
+        toast('📲 Data restored from Google Sheets!');
+        updateHome();
+        updateNotifBadge();
       }
+    } catch(pullErr) {
+      console.warn('Pull failed:', pullErr);
+      toast('⚠️ Could not pull from Sheet. Pushing local data only.');
     }
 
-    // Push only sections with pending data + students tab
+    // ── PUSH ──
+    // After pull+merge, push everything back up.
+    // For empty devices that just restored: push confirms the sheet is consistent.
+    // For devices with pending data: push sends new records up.
     if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
     await syncStudentsTab(token, sheetId);
-    for (const section of db.sections) {
-      if (pendingSectionIds.has(section.id) || isEmptyDevice) {
-        await syncSectionToSheet(token, sheetId, section);
-      }
+
+    // Push all sections that have pending data OR if this was an empty device restore
+    const sectionsToSync = isEmptyDevice
+      ? db.sections  // push all sections after restore
+      : db.sections.filter(s => pendingSectionIds.has(s.id));
+
+    for (const section of sectionsToSync) {
+      await syncSectionToSheet(token, sheetId, section);
     }
 
     // Clear pending queue
