@@ -981,7 +981,10 @@
   </div>
   <div class="home-header">
     <div class="home-greeting" id="home-greeting">Welcome back</div>
-    <div class="home-title">AttendEase 📋</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="home-title">AttendEase 📋</div>
+      <div id="sync-status-badge" style="font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface);border:0.5px solid var(--border);color:var(--text3);display:none;">⏳ Syncing...</div>
+    </div>
     <div class="home-date" id="home-date"></div>
   </div>
   <div class="home-stats" id="home-stats">
@@ -1026,13 +1029,25 @@
       <div class="action-label">Import / Export</div>
       <div class="action-desc">Excel files</div>
     </div>
-    <div class="action-card" id="sync-card" onclick="syncPending()" style="opacity:0.5">
+    <div class="action-card" id="sync-card" onclick="syncPending()">
       <span class="action-icon">☁️</span>
-      <div class="action-label">Sync</div>
+      <div class="action-label">Sync to Google Sheets</div>
       <div class="action-desc" id="sync-desc">No pending data</div>
     </div>
   </div>
-</div>
+  <div style="padding:0 20px 20px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin:0 20px 20px;">
+    <div style="padding:16px 0 16px 16px;">
+      <div style="font-size:13px;font-weight:600;">Auto-Sync</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px;">Sync automatically when online</div>
+    </div>
+    <label style="display:flex;align-items:center;padding-right:16px;cursor:pointer;">
+      <input type="checkbox" id="auto-sync-toggle" onchange="saveAutoSyncPref(this.checked)" style="width:0;height:0;opacity:0;position:absolute;">
+      <div id="auto-sync-track" style="width:44px;height:24px;background:var(--border2);border-radius:12px;position:relative;transition:background 0.2s;cursor:pointer;" onclick="document.getElementById('auto-sync-toggle').click()">
+        <div id="auto-sync-thumb" style="width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+      </div>
+    </label>
+  </div>
+</div>  
 
 <!-- ── SECTIONS LIST ── -->
 <div class="screen" id="screen-sections">
@@ -1511,16 +1526,7 @@ function updateHome() {
   document.getElementById('stat-students').textContent = db.students.length;
   updateUserBar();
 
-  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-  const syncCard = document.getElementById('sync-card');
-  const syncDesc = document.getElementById('sync-desc');
-  if (pending.length > 0) {
-    syncCard.style.opacity = '1';
-    syncDesc.textContent = `${pending.length} session(s) pending`;
-  } else {
-    syncCard.style.opacity = '0.5';
-    syncDesc.textContent = 'No pending data';
-  }
+  updateSyncCard();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2121,11 +2127,222 @@ function exportAbsenceSummary() {
   toast('📥 Summary exported');
 }
 
-// ── SYNC PLACEHOLDER ──
-function syncPending() {
+// ══════════════════════════════════════════════════════════
+// STAGE 3 — Google Sheets Sync
+// ══════════════════════════════════════════════════════════
+
+const SHEET_NAME_PREFIX = 'CASP AttendEase';
+
+// ── AUTO SYNC PREFERENCE ──
+function saveAutoSyncPref(enabled) {
+  localStorage.setItem('attendease_autosync', enabled ? '1' : '0');
+  const track = document.getElementById('auto-sync-track');
+  const thumb = document.getElementById('auto-sync-thumb');
+  if (track && thumb) {
+    track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
+    thumb.style.left = enabled ? '22px' : '2px';
+  }
+  toast(enabled ? '✅ Auto-sync enabled' : '🔕 Auto-sync disabled');
+}
+
+function loadAutoSyncPref() {
+  const val = localStorage.getItem('attendease_autosync');
+  const enabled = val === '1';
+  const toggle = document.getElementById('auto-sync-toggle');
+  const track = document.getElementById('auto-sync-track');
+  const thumb = document.getElementById('auto-sync-thumb');
+  if (toggle) toggle.checked = enabled;
+  if (track) track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
+  if (thumb) thumb.style.left = enabled ? '22px' : '2px';
+  return enabled;
+}
+
+// ── GET FRESH ACCESS TOKEN ──
+function getFreshToken() {
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+      callback: (tokenResponse) => {
+        if (tokenResponse.error) { reject(tokenResponse.error); return; }
+        currentUser.access_token = tokenResponse.access_token;
+        localStorage.setItem('attendease_user', JSON.stringify(currentUser));
+        resolve(tokenResponse.access_token);
+      },
+      prompt: '',
+    });
+    client.requestAccessToken();
+  });
+}
+
+async function getToken() {
+  // Try existing token first, refresh if needed
+  if (currentUser?.access_token) return currentUser.access_token;
+  return await getFreshToken();
+}
+
+// ── FIND OR CREATE THE TEACHER'S GOOGLE SHEET ──
+async function getOrCreateSheet(token) {
+  const sheetName = `${SHEET_NAME_PREFIX} - ${currentUser.name}`;
+
+  // Search Drive for existing sheet
+  const searchRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(sheetName)}'+and+mimeType='application/vnd.google-apps.spreadsheet'+and+trashed=false&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const searchData = await searchRes.json();
+
+  if (searchData.files && searchData.files.length > 0) {
+    return searchData.files[0].id;
+  }
+
+  // Create new sheet
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: sheetName,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+    }),
+  });
+  const createData = await createRes.json();
+  toast(`📊 Created Google Sheet: ${sheetName}`);
+  return createData.id;
+}
+
+// ── SYNC ONE SECTION TO A TAB ──
+async function syncSectionToSheet(token, sheetId, section) {
+  const students = db.students
+    .filter(s => s.sectionId === section.id)
+    .sort((a, b) => a.lastName.localeCompare(b.lastName));
+
+  const dates = [...new Set(
+    db.records.filter(r => r.sectionId === section.id).map(r => r.date)
+  )].sort();
+
+  // Build rows
+  const header = ['Student Name', ...dates.map(fmtDate), 'P', 'A', 'E', 'L'];
+  const rows = [header];
+
+  students.forEach(st => {
+    const row = [`${st.lastName}, ${st.firstName}`];
+    let p=0, a=0, e=0, l=0;
+    dates.forEach(d => {
+      const rec = db.records.find(r => r.studentId === st.id && r.date === d);
+      const status = rec ? rec.status : '-';
+      row.push(status);
+      if (status==='P') p++;
+      if (status==='A') a++;
+      if (status==='E') e++;
+      if (status==='L') l++;
+    });
+    row.push(p, a, e, l);
+    rows.push(row);
+  });
+
+  // Check if tab exists
+  const sheetInfoRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const sheetInfo = await sheetInfoRes.json();
+  const existingSheet = sheetInfo.sheets?.find(s => s.properties.title === section.name);
+
+  if (!existingSheet) {
+    // Add new tab
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{ addSheet: { properties: { title: section.name } } }]
+      }),
+    });
+  }
+
+  // Write data to tab
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(section.name)}!A1:ZZ1000?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: rows }),
+    }
+  );
+}
+
+// ── MAIN SYNC FUNCTION ──
+async function syncPending() {
+  if (!currentUser) { toast('⚠️ Please sign in first'); return; }
+  if (!navigator.onLine) { toast('📶 No internet connection'); return; }
+
   const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-  if (pending.length === 0) { toast('☁️ Nothing to sync'); return; }
-  toast('⚠️ Google Sheets sync coming in Stage 3!');
+
+  // Show syncing badge
+  const badge = document.getElementById('sync-status-badge');
+  if (badge) { badge.style.display = 'block'; badge.textContent = '⏳ Syncing...'; }
+
+  try {
+    const token = await getToken();
+    const sheetId = await getOrCreateSheet(token);
+
+    // Save sheetId for future use
+    localStorage.setItem(`attendease_sheetid_${currentUser.id}`, sheetId);
+
+    // Sync all sections that have pending data
+    const sectionIds = [...new Set(pending.map(p => p.sectionId))];
+    for (const sectionId of sectionIds) {
+      const section = db.sections.find(s => s.id === sectionId);
+      if (section) await syncSectionToSheet(token, sheetId, section);
+    }
+
+    // Clear pending queue
+    localStorage.setItem(pendingKey(), JSON.stringify([]));
+
+    if (badge) { badge.textContent = '✅ Synced'; setTimeout(() => { badge.style.display = 'none'; }, 3000); }
+    toast(`✅ Synced to Google Sheets!`);
+    updateHome();
+
+  } catch (err) {
+    console.error('Sync error:', err);
+    if (badge) { badge.textContent = '❌ Sync failed'; setTimeout(() => { badge.style.display = 'none'; }, 3000); }
+    // Token may have expired — try refreshing
+    if (err === 'invalid_token' || err?.error === 'invalid_token') {
+      toast('🔄 Session expired. Signing in again...');
+      try {
+        const freshToken = await getFreshToken();
+        toast('✅ Token refreshed! Tap Sync again.');
+      } catch { toast('❌ Could not refresh. Please sign out and back in.'); }
+    } else {
+      toast('❌ Sync failed. Check internet and try again.');
+    }
+  }
+}
+
+// ── AUTO SYNC WHEN ONLINE ──
+window.addEventListener('online', () => {
+  const autoSync = localStorage.getItem('attendease_autosync') === '1';
+  if (autoSync && currentUser) {
+    const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+    if (pending.length > 0) {
+      toast('📶 Back online — syncing...');
+      syncPending();
+    }
+  }
+});
+
+// ── UPDATE HOME with sync state ──
+function updateSyncCard() {
+  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  const syncCard = document.getElementById('sync-card');
+  const syncDesc = document.getElementById('sync-desc');
+  if (pending.length > 0) {
+    syncCard.style.opacity = '1';
+    syncDesc.textContent = `${pending.length} session(s) pending`;
+  } else {
+    syncCard.style.opacity = '0.5';
+    syncDesc.textContent = 'All synced ✅';
+  }
+  loadAutoSyncPref();
 }
 
 // ══════════════════════════════════════════════════════════
