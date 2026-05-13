@@ -2683,40 +2683,43 @@ function mergeSheetData(sheetData) {
     }
   });
 
-  // 3. Merge records — match by sectionName + lastName + firstName + date
-  // This avoids duplicate issues when student IDs differ between devices
-  sheetData.records.forEach(shRec => {
-    const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
+  // 3. For each section that exists in the sheet, REPLACE local records entirely
+  // This ensures deletions made on one device are reflected on all devices
+  const sectionsInSheet = new Set(sheetData.sections.map(s => s.name.toLowerCase()));
+
+  sectionsInSheet.forEach(secName => {
+    const sec = db.sections.find(s => s.name.toLowerCase() === secName);
     if (!sec) return;
-    const st = db.students.find(s =>
-      s.sectionId === sec.id &&
-      s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
-      s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
-    );
-    if (!st) return;
 
-    // Match by studentId OR by sectionId+name+date to catch cross-device duplicates
-    const existing = db.records.find(r =>
-      r.date === shRec.date &&
-      r.sectionId === sec.id &&
-      (() => {
-        const localSt = db.students.find(ls => ls.id === r.studentId);
-        return localSt &&
-          localSt.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
-          localSt.firstName.toLowerCase() === shRec.firstName.toLowerCase();
-      })()
+    // Get all records from sheet for this section
+    const sheetRecordsForSection = sheetData.records.filter(r =>
+      r.sectionName.toLowerCase() === secName
     );
 
-    if (existing) {
-      // Newer timestamp wins
-      const sheetTime = shRec.syncedAt || 0;
-      const localTime = existing.syncedAt || 0;
-      if (sheetTime > localTime) {
-        existing.status = shRec.status;
-        existing.sectionId = sec.id;
-        existing.syncedAt = shRec.syncedAt;
-      }
-    } else {
+    // Get pending local records for this section (taken offline, not yet synced)
+    const pendingDates = new Set(
+      JSON.parse(localStorage.getItem(pendingKey()) || '[]')
+        .filter(p => p.sectionId === sec.id)
+        .map(p => p.date)
+    );
+
+    // Remove all local records for this section EXCEPT pending offline ones
+    db.records = db.records.filter(r =>
+      r.sectionId !== sec.id || pendingDates.has(r.date)
+    );
+
+    // Add all sheet records for this section
+    sheetRecordsForSection.forEach(shRec => {
+      const st = db.students.find(s =>
+        s.sectionId === sec.id &&
+        s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+        s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
+      );
+      if (!st) return;
+
+      // Don't overwrite pending offline records
+      if (pendingDates.has(shRec.date)) return;
+
       db.records.push({
         id: uid(),
         sectionId: sec.id,
@@ -2725,31 +2728,8 @@ function mergeSheetData(sheetData) {
         status: shRec.status,
         syncedAt: shRec.syncedAt || Date.now()
       });
-    }
+    });
   });
-
-  // 4. Deduplication pass — remove duplicate records for same student + date
-  // Keep only the one with the highest syncedAt timestamp
-  const seen = new Map();
-  const deduped = [];
-  db.records.forEach(r => {
-    const st = db.students.find(s => s.id === r.studentId);
-    if (!st) return;
-    const key = `${r.sectionId}|${st.lastName.toLowerCase()}|${st.firstName.toLowerCase()}|${r.date}`;
-    if (!seen.has(key)) {
-      seen.set(key, r);
-      deduped.push(r);
-    } else {
-      const prev = seen.get(key);
-      if ((r.syncedAt || 0) > (prev.syncedAt || 0)) {
-        // Replace with newer one
-        const idx = deduped.indexOf(prev);
-        deduped[idx] = r;
-        seen.set(key, r);
-      }
-    }
-  });
-  db.records = deduped;
 
   saveDB();
 }
