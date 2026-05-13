@@ -2665,15 +2665,217 @@ function confirmSignOut() {
 // ══════════════════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════════════════
+// ── TAGLINES ──
+const TAGLINES = [
+  "Stay on top. Your students need you.",
+  "Every mark matters. Keep going.",
+  "Consistency is the key to great teaching.",
+  "Your dedication shapes futures.",
+  "One section at a time. You've got this.",
+];
+
+let dashSectionFilter = 'all'; // 'all' or sectionId
+
 function updateHome() {
   const d = new Date();
-  document.getElementById('home-date').textContent = d.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  document.getElementById('stat-sections').textContent = db.sections.length;
-  document.getElementById('stat-students').textContent = db.students.length;
-  updateUserBar();
+  const el = document.getElementById('home-date');
+  if (el) el.textContent = d.toLocaleDateString('en-PH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
+  // Greeting
+  const hour = d.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const name = currentUser ? (currentUser.given_name || currentUser.name) : 'Teacher';
+  const greetEl = document.getElementById('home-greeting');
+  if (greetEl) greetEl.textContent = `${greeting}, ${name} ✨`;
+
+  // Tagline — rotate daily
+  const taglineEl = document.getElementById('home-tagline');
+  if (taglineEl) taglineEl.textContent = TAGLINES[d.getDay() % TAGLINES.length];
+
+  // Stars
+  initStars();
+
+  // Stats
+  const secEl = document.getElementById('stat-sections');
+  const stuEl = document.getElementById('stat-students');
+  if (secEl) secEl.textContent = db.sections.length;
+  if (stuEl) stuEl.textContent = db.students.length;
+
+  // Sync card desc
   updateSyncCard();
   loadAutoSyncPref();
+  updateUserBar();
+  updateNavUserInfo();
+
+  // Dashboard cards
+  renderDashAttendance();
+  renderDashSchedule();
+  renderDashAttention();
+}
+
+// ── STARS ──
+function initStars() {
+  const bg = document.getElementById('stars-bg');
+  if (!bg || bg.children.length > 0) return; // already initialized
+
+  // Generate 60 stars
+  for (let i = 0; i < 60; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    star.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --dur:${(Math.random()*4+2).toFixed(1)}s;
+      --op:${(Math.random()*0.6+0.2).toFixed(2)};
+      animation-delay:${(Math.random()*5).toFixed(1)}s;
+    `;
+    bg.appendChild(star);
+  }
+
+  // Shooting star
+  const shoot = document.createElement('div');
+  shoot.className = 'shooting-star';
+  shoot.style.cssText = `top:${20+Math.random()*30}%;left:${Math.random()*30}%;animation-delay:${(Math.random()*8+2).toFixed(1)}s;`;
+  bg.appendChild(shoot);
+}
+
+// ── ATTENDANCE DONUT ──
+function renderDashAttendance() {
+  // Section pills
+  const pillsEl = document.getElementById('dash-section-pills');
+  if (pillsEl) {
+    pillsEl.innerHTML = `<div class="section-pill ${dashSectionFilter==='all'?'active':''}" onclick="setDashSection('all')">All</div>` +
+      db.sections.map(s => `<div class="section-pill ${dashSectionFilter===s.id?'active':''}" onclick="setDashSection('${s.id}')">${s.name.slice(0,6)}</div>`).join('');
+  }
+
+  // Get records for selected section
+  let records = db.records;
+  if (dashSectionFilter !== 'all') records = records.filter(r => r.sectionId === dashSectionFilter);
+
+  const total = records.length;
+  const p = records.filter(r => r.status === 'P').length;
+  const a = records.filter(r => r.status === 'A').length;
+  const e = records.filter(r => r.status === 'E').length;
+  const l = records.filter(r => r.status === 'L').length;
+
+  const pct = n => total > 0 ? Math.round((n/total)*100) : 0;
+  const circumference = 175.9;
+
+  // Update legend
+  document.getElementById('leg-p').textContent = `${pct(p)}%`;
+  document.getElementById('leg-a').textContent = `${pct(a)}%`;
+  document.getElementById('leg-e').textContent = `${pct(e)}%`;
+  document.getElementById('leg-l').textContent = `${pct(l)}%`;
+  document.getElementById('donut-center').textContent = total > 0 ? `${pct(p)}%` : '--';
+
+  // Draw donut segments (stacked)
+  if (total === 0) {
+    ['donut-p','donut-a','donut-e','donut-l'].forEach(id => {
+      document.getElementById(id).setAttribute('stroke-dasharray', `0 ${circumference}`);
+    });
+    return;
+  }
+
+  const pArc = (p/total) * circumference;
+  const aArc = (a/total) * circumference;
+  const eArc = (e/total) * circumference;
+  const lArc = (l/total) * circumference;
+
+  // Each segment offset = sum of previous segments
+  const setArc = (id, arc, offset) => {
+    const el = document.getElementById(id);
+    el.setAttribute('stroke-dasharray', `${arc} ${circumference - arc}`);
+    el.setAttribute('transform', `rotate(${-90 + (offset/circumference)*360} 35 35)`);
+  };
+
+  setArc('donut-p', pArc, 0);
+  setArc('donut-a', aArc, pArc);
+  setArc('donut-e', eArc, pArc + aArc);
+  setArc('donut-l', lArc, pArc + aArc + eArc);
+}
+
+function setDashSection(id) {
+  dashSectionFilter = id;
+  renderDashAttendance();
+}
+
+// ── TODAY'S SCHEDULE ──
+function renderDashSchedule() {
+  const list = document.getElementById('dash-schedule-list');
+  if (!list) return;
+
+  const todayClasses = getTodaySchedule();
+  if (todayClasses.length === 0) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">No classes today 🎉</div>`;
+    return;
+  }
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  list.innerHTML = todayClasses.map(cls => {
+    const startMin = timeToMinutes(cls.startTime);
+    const endMin = timeToMinutes(cls.endTime);
+    const isOngoing = nowMin >= startMin && nowMin < endMin;
+    const isPast = nowMin >= endMin;
+
+    let tagHtml = '';
+    let dotColor = 'var(--text3)';
+
+    if (cls.taken) {
+      tagHtml = `<span class="schedule-tag taken">✓ Done</span>`;
+      dotColor = 'var(--present)';
+    } else if (isOngoing) {
+      tagHtml = `<span class="schedule-tag ongoing">● Now</span>`;
+      dotColor = 'var(--accent)';
+    } else if (isPast) {
+      tagHtml = `<span class="schedule-tag" style="background:rgba(255,23,68,0.1);color:var(--absent);">✗ Missed</span>`;
+      dotColor = 'var(--absent)';
+    } else {
+      tagHtml = `<span class="schedule-tag pending">⏳ Soon</span>`;
+      dotColor = 'var(--excused)';
+    }
+
+    return `<div class="schedule-item" onclick="startAttendance('${cls.sectionId}')">
+      <div class="schedule-status-dot" style="background:${dotColor}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="schedule-item-name">${cls.sectionName}</div>
+        <div class="schedule-item-time">${formatTime12(cls.startTime)}</div>
+      </div>
+      ${tagHtml}
+    </div>`;
+  }).join('');
+}
+
+// ── NEEDS ATTENTION ──
+function renderDashAttention() {
+  const list = document.getElementById('dash-attention-list');
+  if (!list) return;
+
+  const { dropped, critical, warning } = getAlertStudents();
+  const all = [...dropped, ...critical, ...warning].slice(0, 5);
+
+  if (all.length === 0) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0;">All students are within safe limits ✅</div>`;
+    return;
+  }
+
+  list.innerHTML = all.map(s => {
+    const isDropped = s.absences >= 10;
+    const isCritical = s.absences >= 9;
+    const color = isDropped ? 'var(--absent)' : isCritical ? '#ff6b6b' : 'var(--excused)';
+    const icon = isDropped ? '📄' : isCritical ? '🚨' : '⚠️';
+    return `<div class="attention-item" onclick="showNoticePreview('${s.id}')">
+      <span style="font-size:16px;">${icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div class="attention-name">${s.lastName}, ${s.firstName}</div>
+        <div class="attention-meta">${s.sectionName} • ${s.absences} absences</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:${color};">${isDropped?'DROPPED':isCritical?'CRITICAL':'WARNING'}</span>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════════════
