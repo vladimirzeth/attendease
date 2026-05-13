@@ -1548,9 +1548,12 @@ function onSignedIn() {
   showScreen('screen-home');
   setupSyncInterval();
   // Auto-sync on load if online
-  if (navigator.onLine && localStorage.getItem('attendease_autosync') === '1') {
+  if (navigator.onLine) {
+    const autoSync = localStorage.getItem('attendease_autosync') === '1';
     const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-    if (pending.length > 0) syncPending();
+    // Always pull on login if online (even if autosync is off and nothing is pending)
+    // This restores data when logging in on a new device
+    syncPending();
   }
 }
 
@@ -2346,6 +2349,132 @@ async function syncSectionToSheet(token, sheetId, section) {
   );
 }
 
+// ── PULL FROM SHEET ──
+async function pullFromSheet(token, sheetId) {
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=Sheet1&majorDimension=ROWS`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  // Get all sheet tabs first
+  const infoRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?includeGridData=false`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const info = await infoRes.json();
+  const tabs = info.sheets?.map(s => s.properties.title) || [];
+
+  const sheetData = { sections: [], students: [], records: [] };
+
+  for (const tabName of tabs) {
+    const valRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const valData = await valRes.json();
+    const rows = valData.values || [];
+    if (rows.length < 2) continue;
+
+    // Row 0 = header: [Student Name, date1, date2, ..., P, A, E, L]
+    const header = rows[0];
+    // Find where the totals columns start (P, A, E, L at the end)
+    const totalCols = ['P','A','E','L'];
+    let dateEndIdx = header.length;
+    for (let i = header.length - 1; i >= 0; i--) {
+      if (totalCols.includes(header[i])) dateEndIdx = i;
+      else break;
+    }
+    const dateHeaders = header.slice(1, dateEndIdx); // formatted dates like "May 13, 2025"
+
+    // Parse section
+    const sec = { id: null, name: tabName, subject: '' };
+    sheetData.sections.push(sec);
+
+    // Parse students + records
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row[0]) continue;
+      const nameParts = row[0].split(',');
+      const lastName = (nameParts[0] || '').trim();
+      const firstName = (nameParts[1] || '').trim();
+      if (!lastName || !firstName) continue;
+
+      const st = { id: null, sectionName: tabName, lastName, firstName };
+      sheetData.students.push(st);
+
+      // Parse each date column
+      dateHeaders.forEach((dateStr, di) => {
+        const status = (row[di + 1] || '').trim();
+        if (['P','A','E','L'].includes(status)) {
+          // Convert formatted date back to ISO
+          const iso = parseFmtDate(dateStr);
+          if (iso) {
+            sheetData.records.push({ sectionName: tabName, lastName, firstName, date: iso, status });
+          }
+        }
+      });
+    }
+  }
+  return sheetData;
+}
+
+// ── PARSE FORMATTED DATE → ISO ──
+function parseFmtDate(str) {
+  try {
+    const d = new Date(str);
+    if (isNaN(d)) return null;
+    return d.toISOString().split('T')[0];
+  } catch { return null; }
+}
+
+// ── MERGE SHEET DATA INTO LOCAL DB ──
+function mergeSheetData(sheetData) {
+  // 1. Merge sections by name
+  sheetData.sections.forEach(shSec => {
+    const exists = db.sections.find(s => s.name.toLowerCase() === shSec.name.toLowerCase());
+    if (!exists) {
+      db.sections.push({ id: uid(), name: shSec.name, subject: '' });
+    }
+  });
+
+  // 2. Merge students by sectionName + lastName + firstName
+  sheetData.students.forEach(shSt => {
+    const sec = db.sections.find(s => s.name.toLowerCase() === shSt.sectionName.toLowerCase());
+    if (!sec) return;
+    const exists = db.students.find(s =>
+      s.sectionId === sec.id &&
+      s.lastName.toLowerCase() === shSt.lastName.toLowerCase() &&
+      s.firstName.toLowerCase() === shSt.firstName.toLowerCase()
+    );
+    if (!exists) {
+      db.students.push({ id: uid(), sectionId: sec.id, lastName: shSt.lastName, firstName: shSt.firstName });
+    }
+  });
+
+  // 3. Merge records — sheet version wins on conflict (same student + date)
+  sheetData.records.forEach(shRec => {
+    const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
+    if (!sec) return;
+    const st = db.students.find(s =>
+      s.sectionId === sec.id &&
+      s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+      s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
+    );
+    if (!st) return;
+
+    const existing = db.records.find(r => r.studentId === st.id && r.date === shRec.date);
+    if (existing) {
+      // Sheet wins — overwrite status
+      existing.status = shRec.status;
+      existing.sectionId = sec.id;
+    } else {
+      // New record from sheet — add it
+      db.records.push({ id: uid(), sectionId: sec.id, date: shRec.date, studentId: st.id, status: shRec.status });
+    }
+  });
+
+  saveDB();
+}
+
 // ── MAIN SYNC FUNCTION ──
 async function syncPending() {
   if (!currentUser) { toast('⚠️ Please sign in first'); return; }
@@ -2364,7 +2493,17 @@ async function syncPending() {
     // Save sheetId for future use
     localStorage.setItem(`attendease_sheetid_${currentUser.id}`, sheetId);
 
-    // Sync ALL sections always — ensures edits, deletes, and new records are reflected
+    // ── PULL FIRST, then merge, then push ──
+    if (badge) badge.textContent = '⬇️ Pulling from Sheet...';
+    try {
+      const sheetData = await pullFromSheet(token, sheetId);
+      mergeSheetData(sheetData);
+    } catch(pullErr) {
+      console.warn('Pull failed (may be a new sheet):', pullErr);
+    }
+
+    // Sync ALL sections — ensures edits, deletes, and new records are reflected
+    if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
     for (const section of db.sections) {
       await syncSectionToSheet(token, sheetId, section);
     }
