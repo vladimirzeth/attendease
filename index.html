@@ -1256,6 +1256,80 @@
     .screen { padding-bottom: 64px; }
   }
 
+  /* ── SCHEDULE SETUP ── */
+  .schedule-section-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .schedule-section-card:hover { border-color: var(--border2); }
+  .schedule-section-card.has-schedule {
+    border-color: rgba(79,195,247,0.4);
+    background: rgba(79,195,247,0.04);
+  }
+  .schedule-day-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text3);
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .schedule-day-btn.selected {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+  }
+  .schedule-day-btn:hover:not(.selected) {
+    border-color: var(--border2);
+    color: var(--text);
+  }
+  .time-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .conflict-badge {
+    background: rgba(255,23,68,0.12);
+    border: 0.5px solid rgba(255,23,68,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--absent);
+    margin-bottom: 16px;
+    display: none;
+  }
+  .conflict-badge.show { display: block; }
+  .schedule-summary {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .schedule-day-pill {
+    background: rgba(79,195,247,0.1);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
   /* ── AUTH LOADING ── */
   #screen-auth-loading {
     align-items: center;
@@ -1861,9 +1935,96 @@
       </div>
     </div>
 
+    <!-- CLASS SCHEDULE -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;margin-top:4px;">Class Schedule</div>
+    <div class="export-option" onclick="showScreen('screen-schedule')" style="margin-bottom:20px;">
+      <span class="export-icon">📅</span>
+      <div class="export-info">
+        <div class="export-name">Manage Class Schedule</div>
+        <div class="export-desc">Set recurring weekly schedule per section</div>
+      </div>
+      <span style="color:var(--text3)">→</span>
+    </div>
+
     <!-- SIGN OUT -->
     <button class="btn-primary" style="background:var(--absent);" onclick="signOut()">Sign Out</button>
 
+  </div>
+</div>
+
+<!-- ── CLASS SCHEDULE SETUP ── -->
+<div class="screen" id="screen-schedule">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Class Schedule</span>
+  </div>
+  <div style="padding:12px 20px;background:rgba(79,195,247,0.05);border-bottom:0.5px solid var(--border);">
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+      Set your weekly recurring class schedule per section. This will automatically populate your calendar and show today's classes on the home screen.
+    </div>
+  </div>
+  <div class="list-container" id="schedule-sections-list"></div>
+</div>
+
+<!-- ── EDIT SECTION SCHEDULE ── -->
+<div class="screen" id="screen-edit-schedule">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-schedule')">←</button>
+    <span class="topbar-title" id="edit-schedule-title">Set Schedule</span>
+  </div>
+  <div class="form-container">
+
+    <!-- Days -->
+    <div class="form-group">
+      <label class="form-label">Class Days</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="schedule-day-btn" id="day-btn-0" onclick="toggleDay(0)">M</button>
+        <button class="schedule-day-btn" id="day-btn-1" onclick="toggleDay(1)">T</button>
+        <button class="schedule-day-btn" id="day-btn-2" onclick="toggleDay(2)">W</button>
+        <button class="schedule-day-btn" id="day-btn-3" onclick="toggleDay(3)">Th</button>
+        <button class="schedule-day-btn" id="day-btn-4" onclick="toggleDay(4)">F</button>
+        <button class="schedule-day-btn" id="day-btn-5" onclick="toggleDay(5)">S</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">M = Monday, T = Tuesday, W = Wednesday, Th = Thursday, F = Friday, S = Saturday</div>
+    </div>
+
+    <!-- Time -->
+    <div class="form-group">
+      <label class="form-label">Class Time</label>
+      <div class="time-input-row">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Start Time</div>
+          <input class="form-input" id="schedule-start-time" type="time" style="font-size:14px;" onchange="checkScheduleConflict()">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">End Time</div>
+          <input class="form-input" id="schedule-end-time" type="time" style="font-size:14px;" onchange="checkScheduleConflict()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Room -->
+    <div class="form-group">
+      <label class="form-label">Location <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <input class="form-input" id="schedule-building" type="text" placeholder="Building (e.g. Main)">
+        <input class="form-input" id="schedule-room" type="text" placeholder="Room (e.g. 201)">
+      </div>
+    </div>
+
+    <!-- Conflict Warning -->
+    <div class="conflict-badge" id="conflict-badge">
+      ⚠️ <span id="conflict-message">Schedule conflict detected.</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <button class="btn-primary" onclick="saveSchedule()">Save Schedule</button>
+    <button class="btn-secondary" onclick="clearSchedule()" style="margin-top:10px;color:var(--absent);border-color:rgba(255,23,68,0.3);">
+      🗑️ Clear Schedule for This Section
+    </button>
+    <button class="btn-secondary" onclick="showScreen('screen-schedule')">Cancel</button>
+
+    <input type="hidden" id="editing-schedule-section-id">
   </div>
 </div>
 
@@ -1973,6 +2134,7 @@ function showScreen(id) {
   if (id === 'screen-records') { recordsFilter='all'; document.querySelectorAll('#screen-records .tab').forEach((t,i)=>t.classList.toggle('active',i===0)); renderRecords(); }
   if (id === 'screen-settings') showSettingsScreen();
   if (id === 'screen-calendar') renderCalendar();
+  if (id === 'screen-schedule') renderScheduleSectionsList();
   updateNavState(id);
 }
 function goHome() { showScreen('screen-home'); }
@@ -3828,6 +3990,302 @@ function dismissWeeklyPopup(dismissOnly) {
     renderWeeklyReport();
     showScreen('screen-weekly-report');
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// CLASS SCHEDULE
+// ══════════════════════════════════════════════════════════
+
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+let editingScheduleDays = []; // array of day indices [0,1,2,3,4,5]
+let editingScheduleSectionId = null;
+
+// ── GET ALL SCHEDULES ──
+function getSchedules() {
+  if (!currentUser) return {};
+  const raw = localStorage.getItem(`attendease_schedules_${currentUser.id}`);
+  return raw ? JSON.parse(raw) : {};
+}
+
+// ── SAVE ALL SCHEDULES ──
+function saveSchedules(schedules) {
+  localStorage.setItem(`attendease_schedules_${currentUser.id}`, JSON.stringify(schedules));
+}
+
+// ── GET SCHEDULE FOR ONE SECTION ──
+function getSectionSchedule(sectionId) {
+  return getSchedules()[sectionId] || null;
+}
+
+// ── FORMAT TIME 24H → 12H ──
+function formatTime12(time24) {
+  if (!time24) return '';
+  const [h, m] = time24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+// ── RENDER SCHEDULE SECTIONS LIST ──
+function renderScheduleSectionsList() {
+  const list = document.getElementById('schedule-sections-list');
+  const schedules = getSchedules();
+
+  if (db.sections.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No sections yet</div><div class="empty-sub">Add sections first before setting up your schedule.</div></div>`;
+    return;
+  }
+
+  list.innerHTML = db.sections.map(sec => {
+    const sched = schedules[sec.id];
+    const hasSchedule = sched && sched.days && sched.days.length > 0;
+    return `
+      <div class="schedule-section-card ${hasSchedule ? 'has-schedule' : ''}"
+           onclick="openEditSchedule('${sec.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${sec.name}</div>
+            ${sec.subject ? `<div style="font-size:12px;color:var(--text3);margin-top:2px;">${sec.subject}</div>` : ''}
+          </div>
+          <span style="color:var(--text3);font-size:18px;">${hasSchedule ? '✅' : '➕'}</span>
+        </div>
+        ${hasSchedule ? `
+          <div class="schedule-summary">
+            ${sched.days.map(d => `<span class="schedule-day-pill">${DAY_SHORT[d]}</span>`).join('')}
+            <span>•</span>
+            <span>${formatTime12(sched.startTime)} – ${formatTime12(sched.endTime)}</span>
+            ${sched.building || sched.room ? `<span>•</span><span>${[sched.building, sched.room ? 'Room '+sched.room : ''].filter(Boolean).join(' ')}</span>` : ''}
+          </div>
+        ` : `<div style="font-size:12px;color:var(--text3);margin-top:6px;">No schedule set — tap to add</div>`}
+      </div>`;
+  }).join('');
+}
+
+// ── OPEN EDIT SCHEDULE ──
+function openEditSchedule(sectionId) {
+  editingScheduleSectionId = sectionId;
+  editingScheduleDays = [];
+
+  const sec = db.sections.find(s => s.id === sectionId);
+  document.getElementById('edit-schedule-title').textContent = sec.name;
+  document.getElementById('editing-schedule-section-id').value = sectionId;
+
+  // Load existing schedule if any
+  const sched = getSectionSchedule(sectionId);
+  if (sched) {
+    editingScheduleDays = [...(sched.days || [])];
+    document.getElementById('schedule-start-time').value = sched.startTime || '';
+    document.getElementById('schedule-end-time').value = sched.endTime || '';
+    document.getElementById('schedule-building').value = sched.building || '';
+    document.getElementById('schedule-room').value = sched.room || '';
+  } else {
+    document.getElementById('schedule-start-time').value = '';
+    document.getElementById('schedule-end-time').value = '';
+    document.getElementById('schedule-building').value = '';
+    document.getElementById('schedule-room').value = '';
+  }
+
+  // Reset day buttons
+  for (let i = 0; i < 6; i++) {
+    const btn = document.getElementById(`day-btn-${i}`);
+    if (btn) btn.classList.toggle('selected', editingScheduleDays.includes(i));
+  }
+
+  // Hide conflict badge
+  document.getElementById('conflict-badge').classList.remove('show');
+
+  showScreen('screen-edit-schedule');
+}
+
+// ── TOGGLE DAY SELECTION ──
+function toggleDay(dayIndex) {
+  const idx = editingScheduleDays.indexOf(dayIndex);
+  if (idx === -1) {
+    editingScheduleDays.push(dayIndex);
+  } else {
+    editingScheduleDays.splice(idx, 1);
+  }
+  const btn = document.getElementById(`day-btn-${dayIndex}`);
+  if (btn) btn.classList.toggle('selected', editingScheduleDays.includes(dayIndex));
+
+  // Live conflict check
+  checkScheduleConflict();
+}
+
+// ── CHECK SCHEDULE CONFLICT ──
+function checkScheduleConflict() {
+  const startTime = document.getElementById('schedule-start-time').value;
+  const endTime = document.getElementById('schedule-end-time').value;
+  const conflictBadge = document.getElementById('conflict-badge');
+  const conflictMsg = document.getElementById('conflict-message');
+
+  if (!startTime || !endTime || editingScheduleDays.length === 0) {
+    conflictBadge.classList.remove('show');
+    return false;
+  }
+
+  const schedules = getSchedules();
+  const conflicts = [];
+
+  // Check all other sections' schedules
+  Object.entries(schedules).forEach(([secId, sched]) => {
+    if (secId === editingScheduleSectionId) return; // skip self
+    if (!sched.days || !sched.startTime || !sched.endTime) return;
+
+    // Check for overlapping days
+    const overlappingDays = editingScheduleDays.filter(d => sched.days.includes(d));
+    if (overlappingDays.length === 0) return;
+
+    // Check for overlapping time
+    const newStart = timeToMinutes(startTime);
+    const newEnd = timeToMinutes(endTime);
+    const existStart = timeToMinutes(sched.startTime);
+    const existEnd = timeToMinutes(sched.endTime);
+
+    const hasTimeOverlap = newStart < existEnd && newEnd > existStart;
+    if (hasTimeOverlap) {
+      const sec = db.sections.find(s => s.id === secId);
+      const dayNames = overlappingDays.map(d => DAY_SHORT[d]).join(', ');
+      conflicts.push(`${sec ? sec.name : 'Another section'} on ${dayNames} (${formatTime12(sched.startTime)}–${formatTime12(sched.endTime)})`);
+    }
+  });
+
+  if (conflicts.length > 0) {
+    conflictMsg.textContent = `Conflict with: ${conflicts.join(' | ')}`;
+    conflictBadge.classList.add('show');
+    return true;
+  } else {
+    conflictBadge.classList.remove('show');
+    return false;
+  }
+}
+
+// ── TIME TO MINUTES HELPER ──
+function timeToMinutes(time) {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// ── SAVE SCHEDULE ──
+function saveSchedule() {
+  const sectionId = document.getElementById('editing-schedule-section-id').value;
+  const startTime = document.getElementById('schedule-start-time').value;
+  const endTime = document.getElementById('schedule-end-time').value;
+  const building = document.getElementById('schedule-building').value.trim();
+  const room = document.getElementById('schedule-room').value.trim();
+
+  // Validation
+  if (editingScheduleDays.length === 0) {
+    toast('⚠️ Please select at least one day');
+    return;
+  }
+  if (!startTime) {
+    toast('⚠️ Please set a start time');
+    return;
+  }
+  if (!endTime) {
+    toast('⚠️ Please set an end time');
+    return;
+  }
+  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+    toast('⚠️ End time must be after start time');
+    return;
+  }
+
+  // Conflict check
+  const hasConflict = checkScheduleConflict();
+  if (hasConflict) {
+    showModal('Schedule Conflict', `
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px">
+        This schedule overlaps with another section. Do you want to save anyway?
+      </p>
+      <button class="btn-primary" style="margin-bottom:10px;" onclick="confirmSaveSchedule()">Save Anyway</button>
+      <button class="btn-secondary" onclick="closeModalForce()">Go Back & Fix</button>
+    `);
+    return;
+  }
+
+  confirmSaveSchedule();
+}
+
+function confirmSaveSchedule() {
+  closeModalForce();
+  const sectionId = document.getElementById('editing-schedule-section-id').value;
+  const startTime = document.getElementById('schedule-start-time').value;
+  const endTime = document.getElementById('schedule-end-time').value;
+  const building = document.getElementById('schedule-building').value.trim();
+  const room = document.getElementById('schedule-room').value.trim();
+
+  const schedules = getSchedules();
+  schedules[sectionId] = {
+    days: [...editingScheduleDays].sort(),
+    startTime,
+    endTime,
+    building,
+    room,
+    updatedAt: Date.now(),
+  };
+  saveSchedules(schedules);
+  toast('✅ Schedule saved!');
+  showScreen('screen-schedule');
+}
+
+// ── CLEAR SCHEDULE ──
+function clearSchedule() {
+  const sectionId = document.getElementById('editing-schedule-section-id').value;
+  const sec = db.sections.find(s => s.id === sectionId);
+  showModal(`Clear schedule for ${sec?.name}?`, `
+    <p style="color:var(--text2);font-size:14px;margin-bottom:20px">
+      This will remove all recurring schedule settings for this section. This cannot be undone.
+    </p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px;" onclick="confirmClearSchedule()">Yes, Clear</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+}
+
+function confirmClearSchedule() {
+  const sectionId = document.getElementById('editing-schedule-section-id').value;
+  const schedules = getSchedules();
+  delete schedules[sectionId];
+  saveSchedules(schedules);
+  closeModalForce();
+  toast('🗑️ Schedule cleared');
+  showScreen('screen-schedule');
+}
+
+// ── GET TODAY'S CLASS SCHEDULE ──
+function getTodaySchedule() {
+  const todayDayIndex = new Date().getDay(); // 0=Sun,1=Mon,...,6=Sat
+  // Convert JS day (0=Sun) to our index (0=Mon)
+  // Sun=0 → not in our schedule (no Sunday classes)
+  // Mon=1 → index 0, Tue=2 → index 1 ... Sat=6 → index 5
+  const ourDayIndex = todayDayIndex === 0 ? -1 : todayDayIndex - 1;
+  if (ourDayIndex === -1) return []; // Sunday — no classes
+
+  const schedules = getSchedules();
+  const todayClasses = [];
+
+  Object.entries(schedules).forEach(([sectionId, sched]) => {
+    if (!sched.days.includes(ourDayIndex)) return;
+    const sec = db.sections.find(s => s.id === sectionId);
+    if (!sec) return;
+    const alreadyTaken = db.records.some(r => r.sectionId === sectionId && r.date === today());
+    todayClasses.push({
+      sectionId,
+      sectionName: sec.name,
+      subject: sec.subject || '',
+      startTime: sched.startTime,
+      endTime: sched.endTime,
+      building: sched.building || '',
+      room: sched.room || '',
+      taken: alreadyTaken,
+    });
+  });
+
+  // Sort by start time
+  todayClasses.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  return todayClasses;
 }
 
 // ── SETTINGS ──
