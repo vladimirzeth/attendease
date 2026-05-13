@@ -3128,7 +3128,7 @@ function checkSaturdayPopup() {
 
   // ── TEMPORARY TEST LINE — remove after testing ──
   // Comment out the line below to test on any day
-  // if (now.getDay() !== 6) return; // 6 = Saturday only
+  if (now.getDay() !== 6) return; // 6 = Saturday only
 
   const todayStr = now.toISOString().split('T')[0];
   const key = `attendease_weekly_popup_${currentUser.id}`;
