@@ -1174,9 +1174,13 @@
     <span class="topbar-title">Attendance Records</span>
     <button class="topbar-action" onclick="toggleSelectMode()">Select</button>
   </div>
-  <div style="padding:0 20px 10px;">
-    <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;">
+  <div style="padding:0 20px 10px;display:flex;gap:10px;">
+    <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;flex:1;">
       <option value="all">All Sections</option>
+    </select>
+    <select class="form-input" id="records-sort" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;width:130px;">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
     </select>
   </div>
   <div class="tabs">
@@ -1202,15 +1206,7 @@
     <button class="topbar-back" onclick="goHome()">←</button>
     <span class="topbar-title">Absence Summary</span>
   </div>
-  <div style="padding:0 20px 10px;display:flex;gap:10px;">
-    <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;flex:1;">
-      <option value="all">All Sections</option>
-    </select>
-    <select class="form-input" id="records-sort" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;width:130px;">
-      <option value="newest">Newest First</option>
-      <option value="oldest">Oldest First</option>
-    </select>
-  </div>
+  
   <div class="tabs">
     <button class="tab active" onclick="filterSection('all', this)">All</button>
     <button class="tab" onclick="filterSection('warn', this)">⚠️ Warning</button>
