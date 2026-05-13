@@ -918,6 +918,81 @@
   }
   .signout-btn:hover { color: var(--absent); border-color: rgba(255,23,68,0.4); }
 
+  /* ── NOTIFICATION BELL ── */
+  .notif-bell {
+    position: relative;
+    width: 36px; height: 36px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+  }
+  .notif-bell:hover { border-color: var(--border2); }
+  .notif-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: var(--absent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px; height: 18px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+    font-family: 'JetBrains Mono', monospace;
+    display: none;
+  }
+
+  /* ── NOTIFICATION CENTER ── */
+  .notif-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0 0 10px;
+    margin-bottom: 4px;
+  }
+  .notif-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .notif-item:hover { border-color: var(--border2); }
+  .notif-item-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .notif-item-meta { font-size: 12px; color: var(--text3); }
+
+  /* ── NOTICE PREVIEW MODAL ── */
+  .notice-box {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text2);
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+  }
+
+  /* ── WEEKLY REPORT ── */
+  .weekly-section-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .weekly-section-name { font-size: 14px; font-weight: 500; }
+  .weekly-section-stats { font-size: 12px; color: var(--text3); }
+
   /* ── AUTH LOADING ── */
   #screen-auth-loading {
     align-items: center;
@@ -977,8 +1052,12 @@
       <div class="user-name" id="user-display-name"></div>
       <div class="user-email" id="user-display-email"></div>
     </div>
-    <button class="signout-btn" onclick="showScreen('screen-settings')" style="margin-right:6px;">⚙️</button>
-    <button class="signout-btn" onclick="signOut()">Sign out</button>
+    <div class="notif-bell" onclick="showScreen('screen-notifications')">
+    🔔
+    <div class="notif-badge" id="notif-badge">0</div>
+  </div>
+  <button class="signout-btn" onclick="showScreen('screen-settings')" style="margin-right:6px;">⚙️</button>
+  <button class="signout-btn" onclick="signOut()">Sign out</button>
   </div>
   <div class="home-header">
     <div class="home-greeting" id="home-greeting">Welcome back</div>
@@ -1015,6 +1094,11 @@
       <span class="action-icon">📅</span>
       <div class="action-label">Records</div>
       <div class="action-desc">View past sessions</div>
+    </div>
+    <div class="action-card" onclick="showScreen('screen-weekly-report')">
+      <span class="action-icon">📊</span>
+      <div class="action-label">Weekly Report</div>
+      <div class="action-desc">Saturday summary</div>
     </div>
     <div class="action-card" onclick="showScreen('screen-absences')">
       <span class="action-icon">🚨</span>
@@ -1102,6 +1186,14 @@
     <div class="form-group">
       <label class="form-label">First Name</label>
       <input class="form-input" id="input-first-name" placeholder="e.g. Juan" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input class="form-input" id="input-student-email" placeholder="e.g. juan@email.com" type="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Facebook Profile URL <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input class="form-input" id="input-student-facebook" placeholder="e.g. https://facebook.com/juan.delacruz" type="url">
     </div>
     <input type="hidden" id="editing-student-id">
     <button class="btn-primary" onclick="saveStudent()">Save Student</button>
@@ -1364,6 +1456,24 @@
   </div>
 </div>
 
+<!-- ── NOTIFICATION CENTER ── -->
+<div class="screen" id="screen-notifications">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Notifications</span>
+  </div>
+  <div class="list-container" id="notifications-list"></div>
+</div>
+
+<!-- ── WEEKLY REPORT SCREEN ── -->
+<div class="screen" id="screen-weekly-report">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Weekly Report</span>
+  </div>
+  <div class="list-container" id="weekly-report-list"></div>
+</div>
+
 <!-- ── MODAL ── -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal" id="modal">
@@ -1441,7 +1551,9 @@ function closeModalForce() { document.getElementById('modal-overlay').classList.
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'screen-home') updateHome();
+  if (id === 'screen-home') { updateHome(); updateNotifBadge(); }
+  if (id === 'screen-notifications') renderNotifications();
+  if (id === 'screen-weekly-report') renderWeeklyReport();
   if (id === 'screen-sections') renderSections();
   if (id === 'screen-students') renderStudents();
   if (id === 'screen-take-select') renderTakeSelect();
@@ -1547,6 +1659,8 @@ function onSignedIn() {
   updateUserBar();
   showScreen('screen-home');
   setupSyncInterval();
+  updateNotifBadge();
+  checkSaturdayPopup();
   // Auto-sync on load if online
   if (navigator.onLine) {
     const autoSync = localStorage.getItem('attendease_autosync') === '1';
@@ -1728,7 +1842,13 @@ function renderStudents() {
   list.innerHTML = students.map((s, i) => `
     <div class="student-item">
       <div class="student-num">${String(i+1).padStart(2,'0')}</div>
-      <div class="student-name">${s.lastName}, ${s.firstName}</div>
+      <div style="flex:1;">
+        <div class="student-name">${s.lastName}, ${s.firstName}</div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          ${s.email ? `<span style="font-size:11px;color:var(--text3);">✉️ ${s.email}</span>` : ''}
+          ${s.facebook ? `<a href="${s.facebook}" target="_blank" style="font-size:11px;color:#1877f2;text-decoration:none;">📘 Facebook</a>` : ''}
+        </div>
+      </div>
       <div class="section-actions">
         <button class="icon-btn" onclick="editStudent('${s.id}')">✏️</button>
         <button class="icon-btn danger" onclick="deleteStudent('${s.id}')">🗑️</button>
@@ -1739,12 +1859,16 @@ function renderStudents() {
 function showAddStudent(editId=null) {
   document.getElementById('input-last-name').value = '';
   document.getElementById('input-first-name').value = '';
+  document.getElementById('input-student-email').value = '';
+  document.getElementById('input-student-facebook').value = '';
   document.getElementById('editing-student-id').value = '';
   document.getElementById('add-student-title').textContent = 'Add Student';
   if (editId) {
     const st = db.students.find(s => s.id === editId);
     document.getElementById('input-last-name').value = st.lastName;
     document.getElementById('input-first-name').value = st.firstName;
+    document.getElementById('input-student-email').value = st.email || '';
+    document.getElementById('input-student-facebook').value = st.facebook || '';
     document.getElementById('editing-student-id').value = editId;
     document.getElementById('add-student-title').textContent = 'Edit Student';
   }
@@ -1756,19 +1880,21 @@ function editStudent(id) { showAddStudent(id); }
 function saveStudent() {
   const last = document.getElementById('input-last-name').value.trim();
   const first = document.getElementById('input-first-name').value.trim();
+  const email = document.getElementById('input-student-email').value.trim();
+  const facebook = document.getElementById('input-student-facebook').value.trim();
   const editId = document.getElementById('editing-student-id').value;
   if (!last || !first) { toast('⚠️ Both names are required'); return; }
   if (editId) {
     const st = db.students.find(s => s.id === editId);
     st.lastName = last; st.firstName = first;
+    st.email = email; st.facebook = facebook;
     toast('✅ Student updated');
   } else {
-    db.students.push({ id: uid(), sectionId: currentSectionId, lastName: last, firstName: first });
+    db.students.push({ id: uid(), sectionId: currentSectionId, lastName: last, firstName: first, email, facebook });
     toast('✅ Student added');
   }
   saveDB(); showScreen('screen-students');
 }
-
 function deleteStudent(id) {
   const st = db.students.find(s => s.id === id);
   showModal(`Remove ${st.firstName} ${st.lastName}?`,
@@ -2144,7 +2270,9 @@ function importExcel(event) {
         let sec = db.sections.find(s => s.name.toLowerCase() === sectionName.toLowerCase());
         if (!sec) { sec = { id: uid(), name: sectionName, subject: '' }; db.sections.push(sec); newSections++; }
         const exists = db.students.find(s => s.sectionId === sec.id && s.lastName.toLowerCase() === lastName.toLowerCase() && s.firstName.toLowerCase() === firstName.toLowerCase());
-        if (!exists) { db.students.push({ id: uid(), sectionId: sec.id, lastName, firstName }); imported++; }
+        const email = String(row[3] || '').trim();
+        const facebook = String(row[4] || '').trim();
+        if (!exists) { db.students.push({ id: uid(), sectionId: sec.id, lastName, firstName, email, facebook }); imported++; }
       }
       saveDB();
       toast(`✅ Imported ${imported} students, ${newSections} new sections`);
@@ -2620,6 +2748,353 @@ function showStudentAbsences(studentId) {
     </div>` : ''}
     <button class="btn-secondary" onclick="closeModalForce()">Close</button>
   `);
+}
+
+// ══════════════════════════════════════════════════════════
+// STAGE 4 — NOTIFICATIONS + WEEKLY REPORT + NOTICE GENERATOR
+// ══════════════════════════════════════════════════════════
+
+// ── YOUR PRIVILEGED ACCOUNT ──
+const ADMIN_EMAIL = 'vladimirivanov1432@gmail.com';
+const N8N_WEBHOOK_URL = 'PASTE_YOUR_N8N_WEBHOOK_URL_HERE'; // replace later
+
+// ── COUNT ALERTS ──
+function getAlertStudents() {
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+  const dropped = [], critical = [], warning = [];
+  db.students.forEach(s => {
+    const count = absenceCounts[s.id] || 0;
+    const sec = db.sections.find(sec => sec.id === s.sectionId);
+    const entry = { ...s, absences: count, sectionName: sec ? sec.name : '', subject: sec ? sec.subject : '' };
+    if (count >= 10) dropped.push(entry);
+    else if (count >= 9) critical.push(entry);
+    else if (count >= 3) warning.push(entry);
+  });
+  return { dropped, critical, warning };
+}
+
+// ── UPDATE BELL BADGE ──
+function updateNotifBadge() {
+  const { dropped, critical, warning } = getAlertStudents();
+  const total = dropped.length + critical.length + warning.length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (total > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = total > 99 ? '99+' : total;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── RENDER NOTIFICATION CENTER ──
+function renderNotifications() {
+  const list = document.getElementById('notifications-list');
+  const { dropped, critical, warning } = getAlertStudents();
+
+  if (dropped.length === 0 && critical.length === 0 && warning.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">All clear!</div><div class="empty-sub">No students require attention at this time.</div></div>`;
+    return;
+  }
+
+  let html = '';
+
+  if (dropped.length > 0) {
+    html += `<div class="notif-group-title" style="color:var(--absent);">📄 Dropped (${dropped.length})</div>`;
+    html += dropped.map(s => `
+      <div class="notif-item" onclick="showNoticePreview('${s.id}')" style="border-color:rgba(255,23,68,0.3);">
+        <div class="notif-item-name">${s.lastName}, ${s.firstName}</div>
+        <div class="notif-item-meta">${s.sectionName} • ${s.absences} absences</div>
+      </div>`).join('');
+  }
+
+  if (critical.length > 0) {
+    html += `<div class="notif-group-title" style="color:#ff6b6b;margin-top:16px;">🚨 Critical (${critical.length})</div>`;
+    html += critical.map(s => `
+      <div class="notif-item" onclick="showNoticePreview('${s.id}')" style="border-color:rgba(255,107,107,0.3);">
+        <div class="notif-item-name">${s.lastName}, ${s.firstName}</div>
+        <div class="notif-item-meta">${s.sectionName} • ${s.absences} absences</div>
+      </div>`).join('');
+  }
+
+  if (warning.length > 0) {
+    html += `<div class="notif-group-title" style="color:var(--excused);margin-top:16px;">⚠️ Warning (${warning.length})</div>`;
+    html += warning.map(s => `
+      <div class="notif-item" onclick="showNoticePreview('${s.id}')" style="border-color:rgba(255,171,64,0.3);">
+        <div class="notif-item-name">${s.lastName}, ${s.firstName}</div>
+        <div class="notif-item-meta">${s.sectionName} • ${s.absences} absences</div>
+      </div>`).join('');
+  }
+
+  list.innerHTML = html;
+}
+
+// ── NOTICE MESSAGE GENERATOR ──
+function generateNotice(student) {
+  const sec = db.sections.find(s => s.id === student.sectionId);
+  const sectionName = sec ? sec.name : 'your section';
+  const subject = sec && sec.subject ? sec.subject : 'the subject';
+  const name = `${student.firstName} ${student.lastName}`;
+  const count = student.absences;
+  const teacher = currentUser ? currentUser.name : 'Your Teacher';
+
+  if (count >= 10) {
+    return `Dear ${name},
+
+We regret to inform you that due to ${count} absences in ${subject} under Section ${sectionName}, you have been officially DROPPED from this subject as per school policy.
+
+Please visit the Registrar's Office at your earliest convenience for further assistance and guidance on your next steps.
+
+We hope you will take this as an opportunity to reassess your attendance and academic commitments.
+
+Respectfully,
+${teacher}
+CASP AttendEase`;
+  }
+
+  if (count >= 9) {
+    return `Dear ${name},
+
+This is an URGENT notice regarding your attendance in ${subject} under Section ${sectionName}.
+
+You have accumulated ${count} absences. You are now in CRITICAL status. One (1) more absence will result in being DROPPED from this subject as per school policy.
+
+Please coordinate with your teacher IMMEDIATELY to address this matter.
+
+Respectfully,
+${teacher}
+CASP AttendEase`;
+  }
+
+  return `Dear ${name},
+
+This is to inform you that you have accumulated ${count} absences in ${subject} under Section ${sectionName}. You are currently under WARNING status.
+
+Please be advised to attend your classes regularly to avoid reaching the critical absence threshold. Consistent attendance is essential for your academic success.
+
+Should you have any concerns, please do not hesitate to coordinate with your teacher.
+
+Respectfully,
+${teacher}
+CASP AttendEase`;
+}
+
+// ── SHOW NOTICE PREVIEW MODAL ──
+function showNoticePreview(studentId) {
+  const s = db.students.find(st => st.id === studentId);
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+  s.absences = absenceCounts[s.id] || 0;
+  const notice = generateNotice(s);
+  const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+
+  let alertColor = s.absences >= 10 ? 'var(--absent)' : s.absences >= 9 ? '#ff6b6b' : 'var(--excused)';
+  let alertLabel = s.absences >= 10 ? '📄 DROPPED' : s.absences >= 9 ? '🚨 CRITICAL' : '⚠️ WARNING';
+
+  showModal(`${s.lastName}, ${s.firstName}`, `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;background:rgba(255,23,68,0.12);color:${alertColor};">${alertLabel}</span>
+      <span style="font-size:12px;color:var(--text3);">${s.absences} absences</span>
+    </div>
+
+    <div class="notice-box">${notice}</div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      ${s.facebook ? `<a href="${s.facebook}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:#1877f2;color:white;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;">📘 Open Facebook</a>` : ''}
+    </div>
+
+    <div style="display:grid;grid-template-columns:${isAdmin && s.email ? '1fr 1fr' : '1fr'};gap:8px;margin-bottom:10px;">
+      <button onclick="copyNotice('${studentId}')" style="padding:14px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">📋 Copy Message</button>
+      ${isAdmin && s.email ? `<button onclick="sendViaGmail('${studentId}')" style="padding:14px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:10px;color:white;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">📧 Send via Gmail</button>` : ''}
+    </div>
+
+    ${!s.email && isAdmin ? `<p style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px;">No email on file — add one in student profile to enable Gmail send.</p>` : ''}
+    ${!s.facebook ? `<p style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px;">No Facebook profile on file — add one in student profile.</p>` : ''}
+
+    <button class="btn-secondary" onclick="closeModalForce()">Close</button>
+  `);
+}
+
+// ── COPY NOTICE TO CLIPBOARD ──
+function copyNotice(studentId) {
+  const s = db.students.find(st => st.id === studentId);
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+  s.absences = absenceCounts[s.id] || 0;
+  const notice = generateNotice(s);
+  navigator.clipboard.writeText(notice)
+    .then(() => toast('📋 Notice copied to clipboard!'))
+    .catch(() => toast('⚠️ Could not copy. Try selecting text manually.'));
+}
+
+// ── SEND VIA GMAIL (ADMIN ONLY) ──
+async function sendViaGmail(studentId) {
+  const s = db.students.find(st => st.id === studentId);
+  if (!s.email) { toast('⚠️ No email on file for this student'); return; }
+
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+  s.absences = absenceCounts[s.id] || 0;
+
+  const sec = db.sections.find(sec => sec.id === s.sectionId);
+  const alertLevel = s.absences >= 10 ? 'DROPPED' : s.absences >= 9 ? 'CRITICAL' : 'WARNING';
+  const alertColor = s.absences >= 10 ? '#ff1744' : s.absences >= 9 ? '#ff6b6b' : '#ffab40';
+  const alertMessage = generateNotice(s);
+
+  toast('📧 Sending...');
+
+  try {
+    const res = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentName: `${s.firstName} ${s.lastName}`,
+        studentEmail: s.email,
+        section: sec ? sec.name : '',
+        subject: sec ? sec.subject : '',
+        absenceCount: s.absences,
+        alertLevel,
+        alertColor,
+        alertMessage,
+        teacherName: currentUser.name,
+        teacherEmail: currentUser.email,
+      })
+    });
+    if (res.ok) {
+      toast('✅ Notice sent via Gmail!');
+      closeModalForce();
+    } else {
+      toast('❌ Failed to send. Check n8n webhook.');
+    }
+  } catch(err) {
+    toast('❌ Could not reach n8n. Check your webhook URL.');
+  }
+}
+
+// ── WEEKLY REPORT ──
+function renderWeeklyReport() {
+  const list = document.getElementById('weekly-report-list');
+  const absenceCounts = {};
+  db.records.filter(r => r.status === 'A').forEach(r => {
+    absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
+  });
+
+  if (db.sections.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No data yet</div></div>`;
+    return;
+  }
+
+  const now = new Date();
+  list.innerHTML = `
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">Week ending</div>
+      <div style="font-size:18px;font-weight:700;">${now.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}</div>
+    </div>
+    ${db.sections.map(sec => {
+      const students = db.students.filter(s => s.sectionId === sec.id);
+      const warn = students.filter(s => { const c = absenceCounts[s.id]||0; return c>=3 && c<9; }).length;
+      const crit = students.filter(s => { const c = absenceCounts[s.id]||0; return c>=9 && c<10; }).length;
+      const drop = students.filter(s => (absenceCounts[s.id]||0) >= 10).length;
+      return `
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:10px;">${sec.name}${sec.subject ? ` <span style="font-size:12px;color:var(--text3);font-weight:400;">• ${sec.subject}</span>` : ''}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+              <div style="font-size:20px;font-weight:700;color:var(--excused);">${warn}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Warning</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+              <div style="font-size:20px;font-weight:700;color:var(--absent);">${crit}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Critical</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;">
+              <div style="font-size:20px;font-weight:700;color:#ff6b6b;">${drop}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px;">Dropped</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}
+    <button class="btn-primary" onclick="showScreen('screen-absences')" style="margin-top:8px;">View Full Absence Details</button>
+  `;
+}
+
+// ── SATURDAY WEEKLY POPUP ──
+function checkSaturdayPopup() {
+  const now = new Date();
+  if (now.getDay() !== 6) return; // 6 = Saturday
+  const key = `attendease_weekly_popup_${currentUser.id}`;
+  const dismissed = localStorage.getItem(key);
+  const todayStr = now.toISOString().split('T')[0];
+
+  // Check if "Don't show again" was ever ticked
+  const dontShow = localStorage.getItem(`${key}_dontshow`);
+  if (dontShow === '1') return;
+
+  // Check if already dismissed today
+  if (dismissed === todayStr) return;
+
+  // Show popup
+  const { dropped, critical, warning } = getAlertStudents();
+  const total = dropped.length + critical.length + warning.length;
+
+  showModal('📊 Weekly Absence Report', `
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">
+      Here is your absence summary for the week ending <strong>${now.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}</strong>.
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;text-align:center;">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:24px;font-weight:700;color:var(--excused);">${warning.length}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Warning</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:24px;font-weight:700;color:var(--absent);">${critical.length}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Critical</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:24px;font-weight:700;color:#ff6b6b;">${dropped.length}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Dropped</div>
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);margin-bottom:16px;cursor:pointer;">
+      <input type="checkbox" id="dontshow-checkbox" style="width:16px;height:16px;accent-color:var(--accent);">
+      Don't show this again
+    </label>
+
+    <button class="btn-primary" style="margin-bottom:10px;" onclick="dismissWeeklyPopup(false)">View Full Report</button>
+    <button class="btn-secondary" onclick="dismissWeeklyPopup(true)">Dismiss</button>
+  `);
+}
+
+function dismissWeeklyPopup(dismissOnly) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const key = `attendease_weekly_popup_${currentUser.id}`;
+  const dontShow = document.getElementById('dontshow-checkbox')?.checked;
+
+  // Save "don't show again" preference
+  if (dontShow) {
+    localStorage.setItem(`${key}_dontshow`, '1');
+  }
+
+  // Mark as dismissed for today
+  localStorage.setItem(key, todayStr);
+  closeModalForce();
+
+  if (!dismissOnly) {
+    renderWeeklyReport();
+    showScreen('screen-weekly-report');
+  }
 }
 
 // ── SETTINGS ──
