@@ -529,6 +529,10 @@
     margin-bottom: 10px;
     font-family: 'JetBrains Mono', monospace;
   }
+  .record-selected {
+    border-color: var(--accent) !important;
+    background: rgba(79,195,247,0.06) !important;
+  }
   .record-item {
     background: var(--surface);
     border: 0.5px solid var(--border);
@@ -1153,12 +1157,25 @@
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">←</button>
     <span class="topbar-title">Attendance Records</span>
+    <button class="topbar-action" onclick="toggleSelectMode()">Select</button>
+  </div>
+  <div style="padding:0 20px 10px;">
+    <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;">
+      <option value="all">All Sections</option>
+    </select>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="filterRecords('all', this)">All</button>
     <button class="tab" onclick="filterRecords('P', this)">Present</button>
     <button class="tab" onclick="filterRecords('A', this)">Absent</button>
     <button class="tab" onclick="filterRecords('E', this)">Excused</button>
+  </div>
+  <!-- Select mode toolbar -->
+  <div id="select-toolbar" style="display:none;padding:0 20px 10px;gap:10px;flex-direction:row;align-items:center;justify-content:space-between;">
+    <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;cursor:pointer;">
+      <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)"> Select All
+    </label>
+    <button onclick="deleteSelectedRecords()" style="background:var(--absent);color:white;border:none;padding:8px 16px;border-radius:8px;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">🗑️ Delete Selected</button>
   </div>
   <div class="list-container" id="records-list" style="padding-top:0"></div>
 </div>
@@ -1259,6 +1276,8 @@ let sessionStudents = [];
 let sessionAnswers = {};
 let recordsFilter = 'all';
 let absenceSectionFilter = 'all';
+let recordsSelectMode = false;
+let selectedRecordIds = new Set();
 
 // ── PERSIST ──
 function saveDB() { localStorage.setItem(dbKey(), JSON.stringify(db)); }
@@ -1746,12 +1765,23 @@ function filterRecords(f, el) {
   renderRecords();
 }
 
+function populateSectionFilter() {
+  const sel = document.getElementById('records-section-filter');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">All Sections</option>' +
+    db.sections.map(s => `<option value="${s.id}" ${current===s.id?'selected':''}>${s.name}</option>`).join('');
+}
+
 function renderRecords() {
+  populateSectionFilter();
+  const sectionFilter = document.getElementById('records-section-filter')?.value || 'all';
   const list = document.getElementById('records-list');
   let records = [...db.records].sort((a,b) => b.date.localeCompare(a.date));
   if (recordsFilter !== 'all') records = records.filter(r => r.status === recordsFilter);
+  if (sectionFilter !== 'all') records = records.filter(r => r.sectionId === sectionFilter);
   if (records.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No records yet</div><div class="empty-sub">Take attendance to see records here.</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No records found</div><div class="empty-sub">Try changing the filters.</div></div>`;
     return;
   }
   const byDate = {};
@@ -1764,19 +1794,67 @@ function renderRecords() {
         const st = db.students.find(s => s.id === r.studentId);
         const sec = db.sections.find(s => s.id === r.sectionId);
         if (!st) return '';
-        return `<div class="record-item">
+        const isSelected = selectedRecordIds.has(r.id);
+        return `<div class="record-item ${isSelected ? 'record-selected' : ''}">
+          ${recordsSelectMode ? `<input type="checkbox" ${isSelected?'checked':''} onchange="toggleRecordSelect('${r.id}',this)" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">` : ''}
           <div class="record-status ${r.status}">${icons[r.status]}</div>
           <div class="record-info">
             <div class="record-name">${st.lastName}, ${st.firstName}</div>
             <div class="record-section">${sec ? sec.name : ''}</div>
           </div>
-          <div class="section-actions">
+          ${!recordsSelectMode ? `<div class="section-actions">
             <button class="icon-btn" onclick="editRecord('${r.id}')">✏️</button>
             <button class="icon-btn danger" onclick="deleteRecord('${r.id}')">🗑️</button>
-          </div>
+          </div>` : ''}
         </div>`;
       }).join('')}
     </div>`).join('');
+}
+
+function toggleSelectMode() {
+  recordsSelectMode = !recordsSelectMode;
+  selectedRecordIds.clear();
+  const toolbar = document.getElementById('select-toolbar');
+  const btn = document.querySelector('#screen-records .topbar-action');
+  toolbar.style.display = recordsSelectMode ? 'flex' : 'none';
+  btn.textContent = recordsSelectMode ? 'Cancel' : 'Select';
+  btn.style.background = recordsSelectMode ? 'var(--absent)' : '';
+  renderRecords();
+}
+
+function toggleRecordSelect(id, checkbox) {
+  if (checkbox.checked) selectedRecordIds.add(id);
+  else selectedRecordIds.delete(id);
+  document.getElementById('select-all-checkbox').checked =
+    selectedRecordIds.size > 0 &&
+    [...document.querySelectorAll('#records-list input[type=checkbox]')].every(c => c.checked);
+}
+
+function toggleSelectAll(checkbox) {
+  document.querySelectorAll('#records-list input[type=checkbox]').forEach(c => {
+    c.checked = checkbox.checked;
+    const id = c.getAttribute('onchange').match(/'([^']+)'/)[1];
+    if (checkbox.checked) selectedRecordIds.add(id);
+    else selectedRecordIds.delete(id);
+  });
+  renderRecords();
+}
+
+function deleteSelectedRecords() {
+  if (selectedRecordIds.size === 0) { toast('⚠️ No records selected'); return; }
+  showModal(`Delete ${selectedRecordIds.size} record(s)?`,
+    `<p style="color:var(--text2);font-size:14px;margin-bottom:20px">This cannot be undone.</p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px" onclick="confirmDeleteSelected()">Yes, Delete All</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>`);
+}
+
+function confirmDeleteSelected() {
+  db.records = db.records.filter(r => !selectedRecordIds.has(r.id));
+  saveDB();
+  selectedRecordIds.clear();
+  closeModalForce();
+  toggleSelectMode();
+  toast('🗑️ Records deleted');
 }
 
 function editRecord(id) {
