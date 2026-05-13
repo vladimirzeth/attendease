@@ -1174,14 +1174,12 @@
     <span class="topbar-title">Attendance Records</span>
     <button class="topbar-action" onclick="toggleSelectMode()">Select</button>
   </div>
-  <div style="padding:0 20px 10px;display:flex;gap:10px;">
+  <div style="padding:0 20px 10px;display:flex;gap:10px;align-items:center;">
     <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;flex:1;">
       <option value="all">All Sections</option>
     </select>
-    <select class="form-input" id="records-sort" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;width:130px;">
-      <option value="newest">Newest First</option>
-      <option value="oldest">Oldest First</option>
-    </select>
+    <input type="date" class="form-input" id="records-date-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;width:150px;">
+    <button onclick="clearDateFilter()" style="background:transparent;border:0.5px solid var(--border);color:var(--text3);padding:10px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;white-space:nowrap;">✕</button>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="filterRecords('all', this)">All</button>
@@ -1814,10 +1812,9 @@ function renderRecords() {
   populateSectionFilter();
   const sectionFilter = document.getElementById('records-section-filter')?.value || 'all';
   const list = document.getElementById('records-list');
-  const sortOrder = document.getElementById('records-sort')?.value || 'newest';
-  let records = [...db.records].sort((a,b) =>
-    sortOrder === 'newest' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
-  );
+  const dateFilter = document.getElementById('records-date-filter')?.value || '';
+  let records = [...db.records].sort((a,b) => b.date.localeCompare(a.date));
+  if (dateFilter) records = records.filter(r => r.date === dateFilter);
   if (recordsFilter !== 'all') records = records.filter(r => r.status === recordsFilter);
   if (sectionFilter !== 'all') records = records.filter(r => r.sectionId === sectionFilter);
   if (records.length === 0) {
@@ -2092,6 +2089,11 @@ window.addEventListener('load', () => {
   // Give GSI script a moment to initialize
   setTimeout(initGoogleAuth, 800);
 });
+
+function clearDateFilter() {
+  document.getElementById('records-date-filter').value = '';
+  renderRecords();
+}
 </script>
 </body>
 </html>
