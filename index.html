@@ -1770,10 +1770,55 @@ function renderRecords() {
             <div class="record-name">${st.lastName}, ${st.firstName}</div>
             <div class="record-section">${sec ? sec.name : ''}</div>
           </div>
+          <div class="section-actions">
+            <button class="icon-btn" onclick="editRecord('${r.id}')">✏️</button>
+            <button class="icon-btn danger" onclick="deleteRecord('${r.id}')">🗑️</button>
+          </div>
         </div>`;
       }).join('')}
     </div>`).join('');
 }
+
+function editRecord(id) {
+  const r = db.records.find(r => r.id === id);
+  const st = db.students.find(s => s.id === r.studentId);
+  showModal(`Edit Record — ${st.lastName}, ${st.firstName}`, `
+    <p style="color:var(--text3);font-size:12px;margin-bottom:16px">${fmtDate(r.date)}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+      <button onclick="confirmEditRecord('${id}','P')" style="padding:16px 8px;border-radius:12px;border:2px solid ${r.status==='P'?'var(--present)':'var(--border)'};background:${r.status==='P'?'rgba(0,230,118,0.15)':'var(--surface2)'};color:${r.status==='P'?'var(--present)':'var(--text2)'};font-family:Sora,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✅<br>PRESENT</button>
+      <button onclick="confirmEditRecord('${id}','A')" style="padding:16px 8px;border-radius:12px;border:2px solid ${r.status==='A'?'var(--absent)':'var(--border)'};background:${r.status==='A'?'rgba(255,23,68,0.15)':'var(--surface2)'};color:${r.status==='A'?'var(--absent)':'var(--text2)'};font-family:Sora,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">❌<br>ABSENT</button>
+      <button onclick="confirmEditRecord('${id}','E')" style="padding:16px 8px;border-radius:12px;border:2px solid ${r.status==='E'?'var(--excused)':'var(--border)'};background:${r.status==='E'?'rgba(255,171,64,0.15)':'var(--surface2)'};color:${r.status==='E'?'var(--excused)':'var(--text2)'};font-family:Sora,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📝<br>EXCUSED</button>
+    </div>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+}
+
+function confirmEditRecord(id, status) {
+  const r = db.records.find(r => r.id === id);
+  r.status = status;
+  saveDB();
+  closeModalForce();
+  renderRecords();
+  toast('✅ Record updated');
+}
+
+function deleteRecord(id) {
+  const r = db.records.find(r => r.id === id);
+  const st = db.students.find(s => s.id === r.studentId);
+  showModal(`Delete record?`, `
+    <p style="color:var(--text2);font-size:14px;margin-bottom:20px">${st.lastName}, ${st.firstName} — ${fmtDate(r.date)}</p>
+    <button class="btn-primary" style="background:var(--absent);margin-bottom:10px" onclick="confirmDeleteRecord('${id}')">Yes, Delete</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+}
+
+function confirmDeleteRecord(id) {
+  db.records = db.records.filter(r => r.id !== id);
+  saveDB();
+  closeModalForce();
+  renderRecords();
+  toast('🗑️ Record deleted');
+}  
 
 // ══════════════════════════════════════════════════════════
 // ABSENCES
