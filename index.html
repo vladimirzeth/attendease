@@ -1540,7 +1540,6 @@ function renderSections() {
     if (sort === 'count-desc') return b.count - a.count;
     if (sort === 'count-asc') return a.count - b.count;
   });
-
   if (sections.length === 0) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No results found</div><div class="empty-sub">Try a different search term.</div></div>`;
     return;
@@ -1561,22 +1560,6 @@ function renderSections() {
     </div>`;
   }).join('');
 }
-    const count = db.students.filter(s => s.sectionId === sec.id).length;
-    const initials = sec.name.slice(0,2).toUpperCase();
-    return `<div class="section-item">
-      <div class="section-avatar" onclick="openSection('${sec.id}')">${initials}</div>
-      <div class="section-info" onclick="openSection('${sec.id}')">
-        <div class="section-name">${sec.name}</div>
-        <div class="section-count">${sec.subject ? sec.subject + ' • ' : ''}${count} student${count !== 1 ? 's' : ''}</div>
-      </div>
-      <div class="section-actions">
-        <button class="icon-btn" onclick="editSection('${sec.id}')">✏️</button>
-        <button class="icon-btn danger" onclick="deleteSection('${sec.id}')">🗑️</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
 function openSection(id) {
   currentSectionId = id;
   const sec = db.sections.find(s => s.id === id);
