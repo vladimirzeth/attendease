@@ -2757,20 +2757,54 @@ async function syncPending() {
     // Save sheetId for future use
     localStorage.setItem(`attendease_sheetid_${currentUser.id}`, sheetId);
 
-    // ── PULL FIRST, then merge, then push ──
-    if (badge) badge.textContent = '⬇️ Pulling from Sheet...';
-    try {
-      const sheetData = await pullFromSheet(token, sheetId);
-      mergeSheetData(sheetData);
-    } catch(pullErr) {
-      console.warn('Pull failed (may be a new sheet):', pullErr);
+    const pendingList = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+    const pendingSectionIds = new Set(pendingList.map(p => p.sectionId));
+    const isEmptyDevice = db.sections.length === 0 && db.students.length === 0;
+
+    if (isEmptyDevice) {
+      // New device — pull everything first
+      if (badge) badge.textContent = '⬇️ Restoring your data...';
+      try {
+        const sheetData = await pullFromSheet(token, sheetId);
+        mergeSheetData(sheetData);
+        toast('📲 Data restored!');
+      } catch(pullErr) {
+        console.warn('Pull failed on new device:', pullErr);
+      }
+    } else {
+      // Existing device — pull only for sections with pending data
+      // (to get any new dates from other devices for those same sections)
+      if (pendingSectionIds.size > 0) {
+        if (badge) badge.textContent = '⬇️ Checking other devices...';
+        try {
+          const sheetData = await pullFromSheet(token, sheetId);
+          // Only keep sheet records for pending sections and dates not locally present
+          sheetData.records = sheetData.records.filter(shRec => {
+            const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
+            if (!sec || !pendingSectionIds.has(sec.id)) return false;
+            const st = db.students.find(s =>
+              s.sectionId === sec.id &&
+              s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+              s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
+            );
+            if (!st) return false;
+            // Only add if this student+date doesn't exist locally
+            return !db.records.some(r => r.studentId === st.id && r.date === shRec.date);
+          });
+          mergeSheetData(sheetData);
+        } catch(pullErr) {
+          console.warn('Pull failed:', pullErr);
+        }
+      }
     }
 
-   // Sync ALL sections — ensures edits, deletes, and new records are reflected
+    // Push only sections with pending data + students tab
     if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
     await syncStudentsTab(token, sheetId);
     for (const section of db.sections) {
-      await syncSectionToSheet(token, sheetId, section);
+      if (pendingSectionIds.has(section.id) || isEmptyDevice) {
+        await syncSectionToSheet(token, sheetId, section);
+      }
     }
 
     // Clear pending queue
