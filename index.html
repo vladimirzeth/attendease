@@ -2626,8 +2626,8 @@ function onSignedIn() {
 
 function updateUserBar() {
   if (!currentUser) return;
-  document.getElementById('user-display-name').textContent = currentUser.name;
-  document.getElementById('user-display-email').textContent = currentUser.email;
+  document.getElementById('home-hero').textContent = currentUser.name;
+  //document.getElementById('user-display-email').textContent = currentUser.email;
   const avatarEl = document.getElementById('user-avatar-el');
   if (currentUser.picture) {
     avatarEl.innerHTML = `<img src="${currentUser.picture}" alt="${currentUser.name}">`;
