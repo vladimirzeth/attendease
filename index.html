@@ -1692,7 +1692,9 @@ function onSignedIn() {
     const shouldSync = !lastSyncStr || hasPending || autoSync || minutesSinceSync > 30;
 
     if (shouldSync) {
-      syncPending();
+      // Silent background sync using stored token only
+      // If token expired, user must tap Sync manually
+      silentSync();
     }
   }
 }
@@ -2409,8 +2411,11 @@ function getFreshToken() {
   });
 }
 
-async function getToken() {
-  return await getFreshToken();
+async function getToken(interactive = false) {
+  if (interactive) return await getFreshToken();
+  // For background syncs, use stored token only
+  if (currentUser?.access_token) return currentUser.access_token;
+  throw new Error('no_token');
 }
 
 // ── FIND OR CREATE THE TEACHER'S GOOGLE SHEET ──
@@ -2746,7 +2751,7 @@ async function syncPending() {
   if (badge) { badge.style.display = 'block'; badge.textContent = '⏳ Syncing...'; }
 
   try {
-    const token = await getFreshToken();
+    const token = await getToken(true);
     const sheetId = await getOrCreateSheet(token);
 
     // Save sheetId for future use
@@ -2802,8 +2807,7 @@ window.addEventListener('online', () => {
   if (autoSync && currentUser) {
     const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
     if (pending.length > 0) {
-      toast('📶 Back online — syncing...');
-      syncPending();
+      toast('📶 Back online — tap Sync to update.');
     }
   }
 });
@@ -3283,6 +3287,34 @@ function setupSyncInterval() {
         }
       }
     }, interval * 60 * 1000);
+  }
+}
+
+async function silentSync() {
+  if (!currentUser?.access_token) return;
+  if (!navigator.onLine) return;
+  const badge = document.getElementById('sync-status-badge');
+  try {
+    if (badge) { badge.style.display = 'block'; badge.textContent = '⏳ Syncing...'; }
+    const token = currentUser.access_token;
+    const sheetId = await getOrCreateSheet(token);
+    localStorage.setItem(`attendease_sheetid_${currentUser.id}`, sheetId);
+    const sheetData = await pullFromSheet(token, sheetId);
+    mergeSheetData(sheetData);
+    await syncStudentsTab(token, sheetId);
+    for (const section of db.sections) {
+      await syncSectionToSheet(token, sheetId, section);
+    }
+    localStorage.setItem(pendingKey(), JSON.stringify([]));
+    const now = new Date();
+    localStorage.setItem(`attendease_lastsync_${currentUser.id}`, now.toISOString());
+    localStorage.setItem(`attendease_lastsync_display_${currentUser.id}`, now.toLocaleString('en-PH'));
+    if (badge) { badge.textContent = '✅ Synced'; setTimeout(() => { badge.style.display = 'none'; }, 3000); }
+    updateHome();
+  } catch(err) {
+    // Silent fail — token likely expired, user needs to tap Sync
+    if (badge) { badge.style.display = 'none'; }
+    console.warn('Silent sync failed — token may be expired:', err);
   }
 }
 </script>
