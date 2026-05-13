@@ -1671,16 +1671,30 @@ function onSignedIn() {
   checkSaturdayPopup();
   if (navigator.onLine) {
     const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-    const lastSync = localStorage.getItem(`attendease_lastsync_${currentUser.id}`);
-    const isFirstLogin = !lastSync;
-    const hasPending = pending.length > 0;
+    const lastSyncStr = localStorage.getItem(`attendease_lastsync_${currentUser.id}`);
     const autoSync = localStorage.getItem('attendease_autosync') === '1';
-    // Only sync if: first time login on this device, or there's pending data, or autosync is on
-    if (isFirstLogin || hasPending || autoSync) {
+    const hasPending = pending.length > 0;
+
+    // Check how long since last sync
+    let minutesSinceSync = Infinity;
+    if (lastSyncStr) {
+      const lastSyncTime = new Date(lastSyncStr).getTime();
+      if (!isNaN(lastSyncTime)) {
+        minutesSinceSync = (Date.now() - lastSyncTime) / 1000 / 60;
+      }
+    }
+
+    // Sync if:
+    // - Never synced on this device
+    // - Has pending data to push
+    // - Auto-sync is on
+    // - Last sync was more than 30 minutes ago (catches opening on another device)
+    const shouldSync = !lastSyncStr || hasPending || autoSync || minutesSinceSync > 30;
+
+    if (shouldSync) {
       syncPending();
     }
   }
-}
 
 function updateUserBar() {
   if (!currentUser) return;
@@ -2782,8 +2796,10 @@ async function syncPending() {
     toast(`✅ Synced to Google Sheets!`);
     updateHome();
     // Save last sync timestamp
-    const now = new Date().toLocaleString('en-PH');
-    localStorage.setItem(`attendease_lastsync_${currentUser.id}`, now);
+    const now = new Date();
+    localStorage.setItem(`attendease_lastsync_${currentUser.id}`, now.toISOString());
+    // Also save human-readable version for display
+    localStorage.setItem(`attendease_lastsync_display_${currentUser.id}`, now.toLocaleString('en-PH'));
 
   } catch (err) {
     console.error('Sync error:', err);
@@ -3257,7 +3273,7 @@ function showSettingsScreen() {
     avatarEl.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
   }
   // load last sync time
-  const lastSync = localStorage.getItem(`attendease_lastsync_${currentUser.id}`);
+  const lastSync = localStorage.getItem(`attendease_lastsync_display_${currentUser.id}`);
   document.getElementById('last-sync-label').textContent = lastSync ? `Last synced: ${lastSync}` : 'Never synced';
   // load interval
   const interval = localStorage.getItem('attendease_syncinterval') || '0';
