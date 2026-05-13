@@ -1040,12 +1040,9 @@
       <div style="font-size:13px;font-weight:600;">Auto-Sync</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px;">Sync automatically when online</div>
     </div>
-    <label style="display:flex;align-items:center;padding-right:16px;cursor:pointer;">
-      <input type="checkbox" id="auto-sync-toggle" onchange="saveAutoSyncPref(this.checked)" style="width:0;height:0;opacity:0;position:absolute;">
-      <div id="auto-sync-track" style="width:44px;height:24px;background:var(--border2);border-radius:12px;position:relative;transition:background 0.2s;cursor:pointer;" onclick="document.getElementById('auto-sync-toggle').click()">
-        <div id="auto-sync-thumb" style="width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
-      </div>
-    </label>
+    <div id="auto-sync-track" onclick="toggleAutoSync()" style="width:44px;height:24px;background:var(--border2);border-radius:12px;position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;margin-right:16px;">
+      <div id="auto-sync-thumb" style="width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+    </div>
   </div>
 </div>  
 
@@ -2135,26 +2132,24 @@ function exportAbsenceSummary() {
 const SHEET_NAME_PREFIX = 'CASP AttendEase';
 
 // ── AUTO SYNC PREFERENCE ──
-function saveAutoSyncPref(enabled) {
-  localStorage.setItem('attendease_autosync', enabled ? '1' : '0');
+function toggleAutoSync() {
+  const current = localStorage.getItem('attendease_autosync') === '1';
+  const newVal = !current;
+  localStorage.setItem('attendease_autosync', newVal ? '1' : '0');
+  applyAutoSyncUI(newVal);
+  toast(newVal ? '✅ Auto-sync enabled' : '🔕 Auto-sync disabled');
+}
+
+function applyAutoSyncUI(enabled) {
   const track = document.getElementById('auto-sync-track');
   const thumb = document.getElementById('auto-sync-thumb');
-  if (track && thumb) {
-    track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
-    thumb.style.left = enabled ? '22px' : '2px';
-  }
-  toast(enabled ? '✅ Auto-sync enabled' : '🔕 Auto-sync disabled');
+  if (track) track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
+  if (thumb) thumb.style.left = enabled ? '22px' : '2px';
 }
 
 function loadAutoSyncPref() {
-  const val = localStorage.getItem('attendease_autosync');
-  const enabled = val === '1';
-  const toggle = document.getElementById('auto-sync-toggle');
-  const track = document.getElementById('auto-sync-track');
-  const thumb = document.getElementById('auto-sync-thumb');
-  if (toggle) toggle.checked = enabled;
-  if (track) track.style.background = enabled ? 'var(--accent)' : 'var(--border2)';
-  if (thumb) thumb.style.left = enabled ? '22px' : '2px';
+  const enabled = localStorage.getItem('attendease_autosync') === '1';
+  applyAutoSyncUI(enabled);
   return enabled;
 }
 
