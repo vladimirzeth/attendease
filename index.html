@@ -1041,6 +1041,15 @@
     <span class="topbar-title">Sections</span>
     <button class="topbar-action" onclick="showScreen('screen-add-section')">+ Add</button>
   </div>
+  <div style="padding:0 20px 10px;display:flex;gap:10px;align-items:center;">
+    <input class="form-input" id="sections-search" type="text" placeholder="🔍 Search sections..." oninput="renderSections()" style="font-size:13px;padding:10px 14px;">
+    <select class="form-input" id="sections-sort" onchange="renderSections()" style="font-size:13px;padding:10px 14px;width:140px;">
+      <option value="name-asc">A → Z</option>
+      <option value="name-desc">Z → A</option>
+      <option value="count-desc">Most Students</option>
+      <option value="count-asc">Least Students</option>
+    </select>
+  </div>
   <div class="list-container" id="sections-list"></div>
 </div>
 
@@ -1510,11 +1519,48 @@ function updateHome() {
 // ══════════════════════════════════════════════════════════
 function renderSections() {
   const list = document.getElementById('sections-list');
-  if (db.sections.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><div class="empty-text">No sections yet</div><div class="empty-sub">Tap "+ Add" to create your first section, or use Import to upload your masterlist.</div></div>`;
+  const search = document.getElementById('sections-search')?.value.toLowerCase() || '';
+  const sort = document.getElementById('sections-sort')?.value || 'name-asc';
+
+  let sections = db.sections.map(sec => ({
+    ...sec,
+    count: db.students.filter(s => s.sectionId === sec.id).length
+  }));
+
+  // apply search
+  if (search) sections = sections.filter(s =>
+    s.name.toLowerCase().includes(search) ||
+    (s.subject && s.subject.toLowerCase().includes(search))
+  );
+
+  // apply sort
+  sections.sort((a, b) => {
+    if (sort === 'name-asc') return a.name.localeCompare(b.name);
+    if (sort === 'name-desc') return b.name.localeCompare(a.name);
+    if (sort === 'count-desc') return b.count - a.count;
+    if (sort === 'count-asc') return a.count - b.count;
+  });
+
+  if (sections.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No results found</div><div class="empty-sub">Try a different search term.</div></div>`;
     return;
   }
-  list.innerHTML = db.sections.map(sec => {
+  list.innerHTML = sections.map(sec => {
+    const count = sec.count;
+    const initials = sec.name.slice(0,2).toUpperCase();
+    return `<div class="section-item">
+      <div class="section-avatar" onclick="openSection('${sec.id}')">${initials}</div>
+      <div class="section-info" onclick="openSection('${sec.id}')">
+        <div class="section-name">${sec.name}</div>
+        <div class="section-count">${sec.subject ? sec.subject + ' • ' : ''}${count} student${count !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="section-actions">
+        <button class="icon-btn" onclick="editSection('${sec.id}')">✏️</button>
+        <button class="icon-btn danger" onclick="deleteSection('${sec.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
     const count = db.students.filter(s => s.sectionId === sec.id).length;
     const initials = sec.name.slice(0,2).toUpperCase();
     return `<div class="section-item">
