@@ -1527,6 +1527,7 @@ function updateHome() {
   updateUserBar();
 
   updateSyncCard();
+  loadAutoSyncPref();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2288,11 +2289,9 @@ async function syncPending() {
     // Save sheetId for future use
     localStorage.setItem(`attendease_sheetid_${currentUser.id}`, sheetId);
 
-    // Sync all sections that have pending data
-    const sectionIds = [...new Set(pending.map(p => p.sectionId))];
-    for (const sectionId of sectionIds) {
-      const section = db.sections.find(s => s.id === sectionId);
-      if (section) await syncSectionToSheet(token, sheetId, section);
+    // Sync ALL sections always — ensures edits, deletes, and new records are reflected
+    for (const section of db.sections) {
+      await syncSectionToSheet(token, sheetId, section);
     }
 
     // Clear pending queue
@@ -2342,7 +2341,6 @@ function updateSyncCard() {
     syncCard.style.opacity = '0.5';
     syncDesc.textContent = 'All synced ✅';
   }
-  loadAutoSyncPref();
 }
 
 // ══════════════════════════════════════════════════════════
