@@ -2052,10 +2052,8 @@ function saveSession() {
   });
   saveDB();
 
-  // Add to this teacher's pending sync queue
-  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-  pending.push({ sectionId: currentSectionId, date: dateStr });
-  localStorage.setItem(pendingKey(), JSON.stringify(pending));
+ // Add to this teacher's pending sync queue
+  addToPendingQueue(currentSectionId, dateStr);
 
   const p = Object.values(sessionAnswers).filter(v => v === 'P').length;
   const a = Object.values(sessionAnswers).filter(v => v === 'A').length;
@@ -2167,8 +2165,23 @@ function deleteSelectedRecords() {
 }
 
 function confirmDeleteSelected() {
+  // Collect affected sections before deleting
+  const affectedSections = new Set();
+  db.records.forEach(r => {
+    if (selectedRecordIds.has(r.id)) {
+      affectedSections.add(JSON.stringify({ sectionId: r.sectionId, date: r.date }));
+    }
+  });
+
   db.records = db.records.filter(r => !selectedRecordIds.has(r.id));
   saveDB();
+
+  // Mark all affected sections as pending
+  affectedSections.forEach(entry => {
+    const { sectionId, date } = JSON.parse(entry);
+    addToPendingQueue(sectionId, date);
+  });
+
   selectedRecordIds.clear();
   closeModalForce();
   toggleSelectMode();
@@ -2194,6 +2207,10 @@ function confirmEditRecord(id, status) {
   r.status = status;
   r.syncedAt = Date.now();
   saveDB();
+
+  // Mark this section as pending sync
+  addToPendingQueue(r.sectionId, r.date);
+
   closeModalForce();
   renderRecords();
   toast('✅ Record updated');
@@ -2210,12 +2227,19 @@ function deleteRecord(id) {
 }
 
 function confirmDeleteRecord(id) {
+  const r = db.records.find(r => r.id === id);
+  const sectionId = r?.sectionId;
+  const date = r?.date;
   db.records = db.records.filter(r => r.id !== id);
   saveDB();
+
+  // Mark this section as pending sync
+  if (sectionId) addToPendingQueue(sectionId, date);
+
   closeModalForce();
   renderRecords();
   toast('🗑️ Record deleted');
-}  
+}
 
 // ══════════════════════════════════════════════════════════
 // ABSENCES
@@ -2945,6 +2969,18 @@ function saveDisplayName() {
   if (!val) { toast('⚠️ Please enter a display name'); return; }
   localStorage.setItem(`attendease_displayname_${currentUser.id}`, val);
   toast('✅ Display name saved');
+}
+
+// ── ADD TO PENDING SYNC QUEUE ──
+function addToPendingQueue(sectionId, date) {
+  const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  // Avoid duplicates
+  const already = pending.some(p => p.sectionId === sectionId && p.date === date);
+  if (!already) {
+    pending.push({ sectionId, date });
+    localStorage.setItem(pendingKey(), JSON.stringify(pending));
+  }
+  updateSyncCard();
 }
 
 // ── COUNT ALERTS ──
