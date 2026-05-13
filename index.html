@@ -1186,8 +1186,13 @@
     <button class="topbar-back" onclick="goHome()">←</button>
     <span class="topbar-title">Absence Summary</span>
   </div>
+  <div style="padding:0 20px 10px;">
+    <select class="form-input" id="absence-section-filter" onchange="renderAbsences()" style="font-size:13px;padding:10px 14px;">
+      <option value="all">All Sections</option>
+    </select>
+  </div>
   <div class="tabs">
-    <button class="tab active" onclick="filterSection('all', this)">All Sections</button>
+    <button class="tab active" onclick="filterSection('all', this)">All</button>
     <button class="tab" onclick="filterSection('warn', this)">⚠️ Warning</button>
     <button class="tab" onclick="filterSection('danger', this)">🚨 Critical</button>
   </div>
@@ -1909,12 +1914,21 @@ function filterSection(f, el) {
 }
 
 function renderAbsences() {
+  // populate section dropdown
+  const absSel = document.getElementById('absence-section-filter');
+  if (absSel) {
+    const cur = absSel.value;
+    absSel.innerHTML = '<option value="all">All Sections</option>' +
+      db.sections.map(s => `<option value="${s.id}" ${cur===s.id?'selected':''}>${s.name}</option>`).join('');
+  }
+  const selectedSection = absSel?.value || 'all';
   const list = document.getElementById('absence-list');
   const absenceCounts = {};
   db.records.filter(r => r.status === 'A').forEach(r => {
     absenceCounts[r.studentId] = (absenceCounts[r.studentId] || 0) + 1;
   });
-  let students = db.students.map(s => ({ ...s, absences: absenceCounts[s.id] || 0 }));
+ let students = db.students.map(s => ({ ...s, absences: absenceCounts[s.id] || 0 }));
+  if (selectedSection !== 'all') students = students.filter(s => s.sectionId === selectedSection);
   students.sort((a,b) => b.absences - a.absences);
   if (absenceSectionFilter === 'warn') students = students.filter(s => s.absences >= 3 && s.absences < 9);
   if (absenceSectionFilter === 'danger') students = students.filter(s => s.absences >= 9);
