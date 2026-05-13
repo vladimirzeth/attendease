@@ -1894,7 +1894,7 @@ function markUnmarkedAbsent() {
 function saveSession() {
   const dateStr = today();
   sessionStudents.forEach(s => {
-    db.records.push({ id: uid(), sectionId: currentSectionId, date: dateStr, studentId: s.id, status: sessionAnswers[s.id] || 'A' });
+    db.records.push({ id: uid(), sectionId: currentSectionId, date: dateStr, studentId: s.id, status: sessionAnswers[s.id] || 'A', syncedAt: Date.now() });
   });
   saveDB();
 
@@ -2038,6 +2038,7 @@ function editRecord(id) {
 function confirmEditRecord(id, status) {
   const r = db.records.find(r => r.id === id);
   r.status = status;
+  r.syncedAt = Date.now();
   saveDB();
   closeModalForce();
   renderRecords();
@@ -2408,7 +2409,7 @@ async function pullFromSheet(token, sheetId) {
           // Convert formatted date back to ISO
           const iso = parseFmtDate(dateStr);
           if (iso) {
-            sheetData.records.push({ sectionName: tabName, lastName, firstName, date: iso, status });
+            sheetData.records.push({ sectionName: tabName, lastName, firstName, date: iso, status, syncedAt: Date.now() });
           }
         }
       });
@@ -2463,9 +2464,14 @@ function mergeSheetData(sheetData) {
 
     const existing = db.records.find(r => r.studentId === st.id && r.date === shRec.date);
     if (existing) {
-      // Sheet wins — overwrite status
-      existing.status = shRec.status;
-      existing.sectionId = sec.id;
+      // Newer timestamp wins instead of "sheet always wins"
+      const sheetTime = shRec.syncedAt || 0;
+      const localTime = existing.syncedAt || 0;
+      if (sheetTime > localTime) {
+        existing.status = shRec.status;
+        existing.sectionId = sec.id;
+        existing.syncedAt = shRec.syncedAt;
+      }
     } else {
       // New record from sheet — add it
       db.records.push({ id: uid(), sectionId: sec.id, date: shRec.date, studentId: st.id, status: shRec.status });
