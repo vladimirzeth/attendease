@@ -3118,7 +3118,7 @@ function showNoticePreview(studentId) {
   });
   s.absences = absenceCounts[s.id] || 0;
   const notice = generateNotice(s);
-  const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+  const isAdmin = currentUser && currentUser.email === '112396451142205883594';
 
   let alertColor = s.absences >= 10 ? 'var(--absent)' : s.absences >= 9 ? '#ff6b6b' : 'var(--excused)';
   let alertLabel = s.absences >= 10 ? '📄 DROPPED' : s.absences >= 9 ? '🚨 CRITICAL' : '⚠️ WARNING';
