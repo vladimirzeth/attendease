@@ -1744,6 +1744,129 @@
 
 <!-- ── HOME ── -->
 <div class="screen" id="screen-home">
+
+  <!-- HERO -->
+  <div class="home-hero" id="home-hero">
+    <div class="stars-bg" id="stars-bg"></div>
+
+    <!-- Mobile topbar inside hero -->
+    <div class="home-hero-topbar" id="hero-topbar">
+      <button onclick="openDrawer()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">☰</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="sync-status-badge" class="hero-sync-badge" style="display:none;">⏳ Syncing...</div>
+        <button class="hero-icon-btn" onclick="showScreen('screen-notifications')" style="position:relative;">
+          🔔
+          <div class="notif-badge" id="notif-badge" style="position:absolute;top:-4px;right:-4px;">0</div>
+        </button>
+        <button class="hero-icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
+      </div>
+    </div>
+
+    <div class="home-hero-content">
+      <div class="home-hero-greeting" id="home-greeting">Good evening, Vladimir ✨</div>
+      <div class="home-hero-tagline" id="home-tagline">Stay on top. Your students need you.</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD GRID -->
+  <div class="dash-grid" id="dash-grid">
+
+    <!-- ATTENDANCE OVERVIEW -->
+    <div class="dash-card" id="dash-attendance">
+      <div class="dash-card-title">👥 Attendance</div>
+      <!-- Section pills -->
+      <div class="section-selector" id="dash-section-pills"></div>
+      <!-- Donut -->
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="70" height="70" viewBox="0 0 70 70">
+          <circle cx="35" cy="35" r="28" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+          <circle id="donut-p" cx="35" cy="35" r="28" fill="none" stroke="var(--present)" stroke-width="10"
+            stroke-dasharray="0 175.9" stroke-linecap="round" transform="rotate(-90 35 35)"
+            style="transition:stroke-dasharray 0.5s ease"/>
+          <circle id="donut-a" cx="35" cy="35" r="28" fill="none" stroke="var(--absent)" stroke-width="10"
+            stroke-dasharray="0 175.9" stroke-linecap="round" transform="rotate(-90 35 35)"
+            style="transition:stroke-dasharray 0.5s ease"/>
+          <circle id="donut-e" cx="35" cy="35" r="28" fill="none" stroke="var(--excused)" stroke-width="10"
+            stroke-dasharray="0 175.9" stroke-linecap="round" transform="rotate(-90 35 35)"
+            style="transition:stroke-dasharray 0.5s ease"/>
+          <circle id="donut-l" cx="35" cy="35" r="28" fill="none" stroke="var(--late)" stroke-width="10"
+            stroke-dasharray="0 175.9" stroke-linecap="round" transform="rotate(-90 35 35)"
+            style="transition:stroke-dasharray 0.5s ease"/>
+          <text x="35" y="39" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="700" font-family="JetBrains Mono" id="donut-center">--</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="donut-legend-item"><div class="donut-dot" style="background:var(--present)"></div>Present<span class="donut-pct" id="leg-p">--%</span></div>
+          <div class="donut-legend-item"><div class="donut-dot" style="background:var(--absent)"></div>Absent<span class="donut-pct" id="leg-a">--%</span></div>
+          <div class="donut-legend-item"><div class="donut-dot" style="background:var(--excused)"></div>Excused<span class="donut-pct" id="leg-e">--%</span></div>
+          <div class="donut-legend-item"><div class="donut-dot" style="background:var(--late)"></div>Late<span class="donut-pct" id="leg-l">--%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TODAY'S SCHEDULE -->
+    <div class="dash-card" id="dash-schedule">
+      <div class="dash-card-title">📅 Today's Classes</div>
+      <div id="dash-schedule-list">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">Loading...</div>
+      </div>
+    </div>
+
+    <!-- NEEDS ATTENTION -->
+    <div class="dash-card dash-card-full" id="dash-attention">
+      <div class="dash-card-title" style="justify-content:space-between;">
+        <span>⚠️ Needs Attention</span>
+        <button onclick="showScreen('screen-notifications')" style="font-size:11px;color:var(--accent);background:transparent;border:none;cursor:pointer;font-family:Sora,sans-serif;">View All →</button>
+      </div>
+      <div id="dash-attention-list">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">All clear! ✅</div>
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="dash-card" style="padding:14px;">
+      <div class="dash-card-title">🏫 Sections</div>
+      <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-sections">0</div>
+    </div>
+    <div class="dash-card" style="padding:14px;">
+      <div class="dash-card-title">👤 Students</div>
+      <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-students">0</div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="dash-card dash-card-full" style="padding:14px;">
+      <div class="dash-card-title">⚡ Quick Actions</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div onclick="showScreen('screen-take-select')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:rgba(79,195,247,0.06);border:0.5px solid rgba(79,195,247,0.3);border-radius:12px;cursor:pointer;">
+          <span style="font-size:22px;">✅</span>
+          <span style="font-size:10px;font-weight:600;color:var(--accent);text-align:center;">Attendance</span>
+        </div>
+        <div onclick="showScreen('screen-records')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+          <span style="font-size:22px;">📅</span>
+          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;">Records</span>
+        </div>
+        <div onclick="showScreen('screen-absences')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+          <span style="font-size:22px;">🚨</span>
+          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;">Absences</span>
+        </div>
+        <div onclick="syncPending()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+          <span style="font-size:22px;">☁️</span>
+          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;" id="sync-desc">Sync</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom padding for nav -->
+  <div style="height:20px;"></div>
+
+  <!-- Hidden elements kept for compatibility -->
+  <div style="display:none;">
+    <div id="home-date"></div>
+    <div id="sync-card"></div>
+    <div id="home-stats"></div>
+  </div>
+</div>
   <!-- User bar -->
   <div class="user-bar" id="user-bar">
     <div class="user-avatar" id="user-avatar-el"></div>
