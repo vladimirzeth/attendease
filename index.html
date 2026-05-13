@@ -977,6 +977,7 @@
       <div class="user-name" id="user-display-name"></div>
       <div class="user-email" id="user-display-email"></div>
     </div>
+    <button class="signout-btn" onclick="showScreen('screen-settings')" style="margin-right:6px;">⚙️</button>
     <button class="signout-btn" onclick="signOut()">Sign out</button>
   </div>
   <div class="home-header">
@@ -1033,15 +1034,6 @@
       <span class="action-icon">☁️</span>
       <div class="action-label">Sync to Google Sheets</div>
       <div class="action-desc" id="sync-desc">No pending data</div>
-    </div>
-  </div>
-  <div style="padding:0 20px 20px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin:0 20px 20px;">
-    <div style="padding:16px 0 16px 16px;">
-      <div style="font-size:13px;font-weight:600;">Auto-Sync</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px;">Sync automatically when online</div>
-    </div>
-    <div id="auto-sync-track" onclick="toggleAutoSync()" style="width:44px;height:24px;background:var(--border2);border-radius:12px;position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;margin-right:16px;">
-      <div id="auto-sync-thumb" style="width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
     </div>
   </div>
 </div>  
@@ -1288,6 +1280,90 @@
   </div>
 </div>
 
+<!-- ── SETTINGS ── -->
+<div class="screen" id="screen-settings">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">←</button>
+    <span class="topbar-title">Settings</span>
+  </div>
+  <div class="form-container" style="padding:20px;">
+
+    <!-- ACCOUNT -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Account</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="user-avatar" id="settings-avatar" style="width:44px;height:44px;font-size:16px;"></div>
+        <div>
+          <div style="font-size:14px;font-weight:600;" id="settings-name"></div>
+          <div style="font-size:12px;color:var(--text3);" id="settings-email"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYNC SETTINGS -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Sync</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;">
+
+      <!-- Auto Sync Toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:0.5px solid var(--border);">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Auto-Sync</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Sync when internet is available</div>
+        </div>
+        <div id="auto-sync-track" onclick="toggleAutoSync()" style="width:44px;height:24px;background:var(--border2);border-radius:12px;position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0;">
+          <div id="auto-sync-thumb" style="width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+        </div>
+      </div>
+
+      <!-- Sync Interval -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:0.5px solid var(--border);">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Sync Interval</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">How often to auto-sync</div>
+        </div>
+        <select id="sync-interval" class="form-input" onchange="saveSyncInterval(this.value)" style="width:120px;font-size:13px;padding:8px 12px;">
+          <option value="0">On save only</option>
+          <option value="5">Every 5 min</option>
+          <option value="10">Every 10 min</option>
+          <option value="15">Every 15 min</option>
+          <option value="30">Every 30 min</option>
+          <option value="60">Every 1 hour</option>
+        </select>
+      </div>
+
+      <!-- Manual Sync -->
+      <div style="padding:16px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Manual Sync</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="last-sync-label">Never synced</div>
+        </div>
+        <button onclick="syncPending()" style="background:var(--accent2);color:white;border:none;padding:10px 16px;border-radius:10px;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Sync Now</button>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">About</div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid var(--border);">
+        <span style="font-size:14px;">App</span>
+        <span style="font-size:14px;color:var(--text3);">CASP AttendEase</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid var(--border);">
+        <span style="font-size:14px;">Stage</span>
+        <span style="font-size:14px;color:var(--text3);">3 of 4</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:14px 18px;">
+        <span style="font-size:14px;">Made by</span>
+        <span style="font-size:14px;color:var(--text3);">Vladimir Zeth</span>
+      </div>
+    </div>
+
+    <!-- SIGN OUT -->
+    <button class="btn-primary" style="background:var(--absent);" onclick="signOut()">Sign Out</button>
+
+  </div>
+</div>
+
 <!-- ── MODAL ── -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal" id="modal">
@@ -1370,7 +1446,7 @@ function showScreen(id) {
   if (id === 'screen-students') renderStudents();
   if (id === 'screen-take-select') renderTakeSelect();
   if (id === 'screen-records') { recordsFilter='all'; document.querySelectorAll('#screen-records .tab').forEach((t,i)=>t.classList.toggle('active',i===0)); renderRecords(); }
-  if (id === 'screen-absences') renderAbsences();
+  if (id === 'screen-settings') showSettingsScreen();
 }
 function goHome() { showScreen('screen-home'); }
 
@@ -1467,11 +1543,15 @@ function parseJwt(token) {
 }
 
 function onSignedIn() {
-  // Load this teacher's private data
   loadDB();
-  // Update UI
   updateUserBar();
   showScreen('screen-home');
+  setupSyncInterval();
+  // Auto-sync on load if online
+  if (navigator.onLine && localStorage.getItem('attendease_autosync') === '1') {
+    const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+    if (pending.length > 0) syncPending();
+  }
 }
 
 function updateUserBar() {
@@ -2295,6 +2375,9 @@ async function syncPending() {
     if (badge) { badge.textContent = '✅ Synced'; setTimeout(() => { badge.style.display = 'none'; }, 3000); }
     toast(`✅ Synced to Google Sheets!`);
     updateHome();
+    // Save last sync timestamp
+    const now = new Date().toLocaleString('en-PH');
+    localStorage.setItem(`attendease_lastsync_${currentUser.id}`, now);
 
   } catch (err) {
     console.error('Sync error:', err);
@@ -2392,6 +2475,53 @@ function showStudentAbsences(studentId) {
     </div>` : ''}
     <button class="btn-secondary" onclick="closeModalForce()">Close</button>
   `);
+}
+
+// ── SETTINGS ──
+function showSettingsScreen() {
+  if (!currentUser) return;
+  // populate account info
+  document.getElementById('settings-name').textContent = currentUser.name;
+  document.getElementById('settings-email').textContent = currentUser.email;
+  const avatarEl = document.getElementById('settings-avatar');
+  if (currentUser.picture) {
+    avatarEl.innerHTML = `<img src="${currentUser.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+  } else {
+    avatarEl.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
+  }
+  // load last sync time
+  const lastSync = localStorage.getItem(`attendease_lastsync_${currentUser.id}`);
+  document.getElementById('last-sync-label').textContent = lastSync ? `Last synced: ${lastSync}` : 'Never synced';
+  // load interval
+  const interval = localStorage.getItem('attendease_syncinterval') || '0';
+  document.getElementById('sync-interval').value = interval;
+  // load toggle
+  loadAutoSyncPref();
+}
+
+function saveSyncInterval(val) {
+  localStorage.setItem('attendease_syncinterval', val);
+  setupSyncInterval();
+  toast(val === '0' ? '✅ Sync on save only' : `✅ Syncing every ${val} minute(s)`);
+}
+
+let syncIntervalTimer = null;
+function setupSyncInterval() {
+  // Clear existing timer
+  if (syncIntervalTimer) clearInterval(syncIntervalTimer);
+  const interval = parseInt(localStorage.getItem('attendease_syncinterval') || '0');
+  const autoSync = localStorage.getItem('attendease_autosync') === '1';
+  if (interval > 0 && autoSync) {
+    syncIntervalTimer = setInterval(() => {
+      if (navigator.onLine && currentUser) {
+        const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+        if (pending.length > 0) {
+          toast('🔄 Auto-syncing...');
+          syncPending();
+        }
+      }
+    }, interval * 60 * 1000);
+  }
 }
 </script>
 </body>
