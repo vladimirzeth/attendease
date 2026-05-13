@@ -1669,13 +1669,16 @@ function onSignedIn() {
   setupSyncInterval();
   updateNotifBadge();
   checkSaturdayPopup();
-  // Auto-sync on load if online
   if (navigator.onLine) {
-    const autoSync = localStorage.getItem('attendease_autosync') === '1';
     const pending = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
-    // Always pull on login if online (even if autosync is off and nothing is pending)
-    // This restores data when logging in on a new device
-    syncPending();
+    const lastSync = localStorage.getItem(`attendease_lastsync_${currentUser.id}`);
+    const isFirstLogin = !lastSync;
+    const hasPending = pending.length > 0;
+    const autoSync = localStorage.getItem('attendease_autosync') === '1';
+    // Only sync if: first time login on this device, or there's pending data, or autosync is on
+    if (isFirstLogin || hasPending || autoSync) {
+      syncPending();
+    }
   }
 }
 
@@ -2629,9 +2632,17 @@ async function pullFromSheet(token, sheetId) {
 // ── PARSE FORMATTED DATE → ISO ──
 function parseFmtDate(str) {
   try {
-    const d = new Date(str);
-    if (isNaN(d)) return null;
-    return d.toISOString().split('T')[0];
+    // Parse month name manually to avoid UTC timezone shift
+    const months = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+    const parts = str.replace(',', '').split(' ');
+    // Expected format: "May 13, 2026" → ["May", "13", "2026"]
+    if (parts.length !== 3) return null;
+    const month = months[parts[0]];
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+    // Build ISO string directly without Date object to avoid timezone issues
+    return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   } catch { return null; }
 }
 
