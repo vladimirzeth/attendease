@@ -1202,9 +1202,13 @@
     <button class="topbar-back" onclick="goHome()">←</button>
     <span class="topbar-title">Absence Summary</span>
   </div>
-  <div style="padding:0 20px 10px;">
-    <select class="form-input" id="absence-section-filter" onchange="renderAbsences()" style="font-size:13px;padding:10px 14px;">
+  <div style="padding:0 20px 10px;display:flex;gap:10px;">
+    <select class="form-input" id="records-section-filter" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;flex:1;">
       <option value="all">All Sections</option>
+    </select>
+    <select class="form-input" id="records-sort" onchange="renderRecords()" style="font-size:13px;padding:10px 14px;width:130px;">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
     </select>
   </div>
   <div class="tabs">
@@ -1687,6 +1691,20 @@ function startAttendance(sectionId) {
   currentSectionId = sectionId;
   sessionStudents = db.students.filter(s => s.sectionId === sectionId);
   if (sessionStudents.length === 0) { toast('⚠️ No students in this section'); return; }
+
+  // ── ONE ATTENDANCE PER DAY RULE ──
+  const alreadyTaken = db.records.some(r => r.sectionId === sectionId && r.date === today());
+  if (alreadyTaken) {
+    const sec = db.sections.find(s => s.id === sectionId);
+    showModal('Already Taken Today', `
+      <p style="color:var(--text2);font-size:14px;margin-bottom:20px">Attendance for <strong>${sec.name}</strong> was already recorded today (${fmtDate(today())}).</p>
+      <p style="color:var(--text3);font-size:13px;margin-bottom:20px">To make corrections, go to <strong>Attendance Records</strong> and use the edit or delete buttons.</p>
+      <button class="btn-primary" style="margin-bottom:10px" onclick="closeModalForce();showScreen('screen-records')">Go to Records</button>
+      <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+    `);
+    return;
+  }
+
   sessionAnswers = {};
   currentStudentIndex = 0;
   const sec = db.sections.find(s => s.id === sectionId);
@@ -1800,7 +1818,10 @@ function renderRecords() {
   populateSectionFilter();
   const sectionFilter = document.getElementById('records-section-filter')?.value || 'all';
   const list = document.getElementById('records-list');
-  let records = [...db.records].sort((a,b) => b.date.localeCompare(a.date));
+  const sortOrder = document.getElementById('records-sort')?.value || 'newest';
+  let records = [...db.records].sort((a,b) =>
+    sortOrder === 'newest' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
+  );
   if (recordsFilter !== 'all') records = records.filter(r => r.status === recordsFilter);
   if (sectionFilter !== 'all') records = records.filter(r => r.sectionId === sectionFilter);
   if (records.length === 0) {
