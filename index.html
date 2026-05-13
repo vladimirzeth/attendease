@@ -2659,7 +2659,8 @@ function mergeSheetData(sheetData) {
     }
   });
 
-  // 3. Merge records — sheet version wins on conflict (same student + date)
+  // 3. Merge records — match by sectionName + lastName + firstName + date
+  // This avoids duplicate issues when student IDs differ between devices
   sheetData.records.forEach(shRec => {
     const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
     if (!sec) return;
@@ -2670,9 +2671,20 @@ function mergeSheetData(sheetData) {
     );
     if (!st) return;
 
-    const existing = db.records.find(r => r.studentId === st.id && r.date === shRec.date);
+    // Match by studentId OR by sectionId+name+date to catch cross-device duplicates
+    const existing = db.records.find(r =>
+      r.date === shRec.date &&
+      r.sectionId === sec.id &&
+      (() => {
+        const localSt = db.students.find(ls => ls.id === r.studentId);
+        return localSt &&
+          localSt.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+          localSt.firstName.toLowerCase() === shRec.firstName.toLowerCase();
+      })()
+    );
+
     if (existing) {
-      // Newer timestamp wins instead of "sheet always wins"
+      // Newer timestamp wins
       const sheetTime = shRec.syncedAt || 0;
       const localTime = existing.syncedAt || 0;
       if (sheetTime > localTime) {
@@ -2681,10 +2693,39 @@ function mergeSheetData(sheetData) {
         existing.syncedAt = shRec.syncedAt;
       }
     } else {
-      // New record from sheet — add it
-      db.records.push({ id: uid(), sectionId: sec.id, date: shRec.date, studentId: st.id, status: shRec.status });
+      db.records.push({
+        id: uid(),
+        sectionId: sec.id,
+        date: shRec.date,
+        studentId: st.id,
+        status: shRec.status,
+        syncedAt: shRec.syncedAt || Date.now()
+      });
     }
   });
+
+  // 4. Deduplication pass — remove duplicate records for same student + date
+  // Keep only the one with the highest syncedAt timestamp
+  const seen = new Map();
+  const deduped = [];
+  db.records.forEach(r => {
+    const st = db.students.find(s => s.id === r.studentId);
+    if (!st) return;
+    const key = `${r.sectionId}|${st.lastName.toLowerCase()}|${st.firstName.toLowerCase()}|${r.date}`;
+    if (!seen.has(key)) {
+      seen.set(key, r);
+      deduped.push(r);
+    } else {
+      const prev = seen.get(key);
+      if ((r.syncedAt || 0) > (prev.syncedAt || 0)) {
+        // Replace with newer one
+        const idx = deduped.indexOf(prev);
+        deduped[idx] = r;
+        seen.set(key, r);
+      }
+    }
+  });
+  db.records = deduped;
 
   saveDB();
 }
