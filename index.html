@@ -762,6 +762,7 @@
     overflow: hidden;
     padding: 40px 32px;
     text-align: center;
+    min-height: 100vh;
   }
   #screen-login::before {
     content: '';
@@ -933,8 +934,9 @@
 
 <!-- ── LOGIN ── -->
 <div class="screen" id="screen-login">
+  <div style="font-size:30px;font-weight:700;letter-spacing:4px;color:var(--text3);text-transform:uppercase;position:relative;z-index:1;margin-bottom:8px;">CASP</div>
   <div class="login-logo">Attend<span>Ease</span></div>
-  <div class="login-sub">Smart Attendance Tracker</div>
+  <div class="login-sub" style="margin-bottom:32px;">Smart Attendance Tracker</div>
   <div class="login-card">
     <div class="login-headline">Sign in to continue</div>
     <div class="login-body">Your data is private and isolated to your account. Sign in from any device and your sections will always be there.</div>
@@ -948,6 +950,7 @@
     <div class="login-feature"><div class="login-feature-icon">📱</div> Access from any phone or tablet</div>
     <div class="login-feature"><div class="login-feature-icon">☁️</div> Google Sheets sync coming in Stage 3</div>
   </div>
+  <div style="position:absolute;bottom:20px;left:0;right:0;z-index:1;font-size:11px;color:var(--text3);">Made by Vladimir Zeth</div>
 </div>
 
 <!-- ── HOME ── -->
