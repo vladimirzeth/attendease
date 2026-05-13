@@ -2410,8 +2410,6 @@ function getFreshToken() {
 }
 
 async function getToken() {
-  // Try existing token first, refresh if needed
-  if (currentUser?.access_token) return currentUser.access_token;
   return await getFreshToken();
 }
 
@@ -2768,7 +2766,7 @@ async function syncPending() {
   if (badge) { badge.style.display = 'block'; badge.textContent = '⏳ Syncing...'; }
 
   try {
-    const token = await getToken();
+    const token = await getFreshToken();
     const sheetId = await getOrCreateSheet(token);
 
     // Save sheetId for future use
