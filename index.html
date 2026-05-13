@@ -1382,7 +1382,7 @@
 
     <!-- ACCOUNT -->
     <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Account</div>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;">
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div class="user-avatar" id="settings-avatar" style="width:44px;height:44px;font-size:16px;"></div>
         <div>
@@ -1390,6 +1390,14 @@
           <div style="font-size:12px;color:var(--text3);" id="settings-email"></div>
         </div>
       </div>
+    </div>
+
+    <!-- DISPLAY NAME -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Display Name for Notices</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.6;">This name will appear on absence notices sent to students. Use your real name or preferred professional name.</div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <input class="form-input" id="input-display-name" placeholder="e.g. Mr. Vladimir Zeth" type="text" style="flex:1;">
+      <button onclick="saveDisplayName()" style="background:var(--accent2);color:white;border:none;padding:14px 18px;border-radius:var(--radius-sm);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Save</button>
     </div>
 
     <!-- SYNC SETTINGS -->
@@ -2418,6 +2426,43 @@ async function getOrCreateSheet(token) {
   return createData.id;
 }
 
+// ── SYNC STUDENT MASTERLIST TAB ──
+async function syncStudentsTab(token, sheetId) {
+  const rows = [['Section', 'Last Name', 'First Name', 'Email', 'Facebook', 'Student ID']];
+  db.sections.forEach(sec => {
+    db.students.filter(s => s.sectionId === sec.id).forEach(s => {
+      rows.push([sec.name, s.lastName, s.firstName, s.email || '', s.facebook || '', s.id]);
+    });
+  });
+
+  // Check if __Students__ tab exists
+  const infoRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?includeGridData=false`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const info = await infoRes.json();
+  const exists = info.sheets?.find(s => s.properties.title === '__Students__');
+
+  if (!exists) {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{ addSheet: { properties: { title: '__Students__' } } }]
+      }),
+    });
+  }
+
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('__Students__')}!A1:ZZ5000?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: rows }),
+    }
+  );
+}
+
 // ── SYNC ONE SECTION TO A TAB ──
 async function syncSectionToSheet(token, sheetId, section) {
   const students = db.students
@@ -2495,6 +2540,41 @@ async function pullFromSheet(token, sheetId) {
   const sheetData = { sections: [], students: [], records: [] };
 
   for (const tabName of tabs) {
+    // Pull student profiles from __Students__ tab
+    if (tabName === '__Students__') {
+      const valRes = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('__Students__')}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const valData = await valRes.json();
+      const rows = valData.values || [];
+      // Skip header row
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const sectionName = String(row[0] || '').trim();
+        const lastName = String(row[1] || '').trim();
+        const firstName = String(row[2] || '').trim();
+        const email = String(row[3] || '').trim();
+        const facebook = String(row[4] || '').trim();
+        const studentId = String(row[5] || '').trim();
+        if (!lastName || !firstName) continue;
+        // Find matching student and update profile fields
+        const sec = db.sections.find(s => s.name.toLowerCase() === sectionName.toLowerCase());
+        if (!sec) continue;
+        const st = db.students.find(s =>
+          s.sectionId === sec.id &&
+          s.lastName.toLowerCase() === lastName.toLowerCase() &&
+          s.firstName.toLowerCase() === firstName.toLowerCase()
+        );
+        if (st) {
+          // Update profile fields from sheet
+          st.email = email || st.email || '';
+          st.facebook = facebook || st.facebook || '';
+        }
+      }
+      continue;
+    }
+
     const valRes = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -2636,8 +2716,9 @@ async function syncPending() {
       console.warn('Pull failed (may be a new sheet):', pullErr);
     }
 
-    // Sync ALL sections — ensures edits, deletes, and new records are reflected
+   // Sync ALL sections — ensures edits, deletes, and new records are reflected
     if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
+    await syncStudentsTab(token, sheetId);
     for (const section of db.sections) {
       await syncSectionToSheet(token, sheetId, section);
     }
@@ -2756,7 +2837,21 @@ function showStudentAbsences(studentId) {
 
 // ── YOUR PRIVILEGED ACCOUNT ──
 const ADMIN_EMAIL = 'vladimirivanov1432@gmail.com';
-const N8N_WEBHOOK_URL = 'PASTE_YOUR_N8N_WEBHOOK_URL_HERE'; // replace later
+const N8N_WEBHOOK_URL = 'PASTE_YOUR_N8N_WEBHOOK_URL_HERE';
+
+// ── DISPLAY NAME ──
+function getDisplayName() {
+  if (!currentUser) return 'Your Teacher';
+  const saved = localStorage.getItem(`attendease_displayname_${currentUser.id}`);
+  return saved || currentUser.name;
+}
+
+function saveDisplayName() {
+  const val = document.getElementById('input-display-name').value.trim();
+  if (!val) { toast('⚠️ Please enter a display name'); return; }
+  localStorage.setItem(`attendease_displayname_${currentUser.id}`, val);
+  toast('✅ Display name saved');
+}
 
 // ── COUNT ALERTS ──
 function getAlertStudents() {
@@ -2839,16 +2934,16 @@ function generateNotice(student) {
   const subject = sec && sec.subject ? sec.subject : 'the subject';
   const name = `${student.firstName} ${student.lastName}`;
   const count = student.absences;
-  const teacher = currentUser ? currentUser.name : 'Your Teacher';
+  const teacher = getDisplayName();
 
   if (count >= 10) {
     return `Dear ${name},
 
 We regret to inform you that due to ${count} absences in ${subject} under Section ${sectionName}, you have been officially DROPPED from this subject as per school policy.
 
-Please visit the Registrar's Office at your earliest convenience for further assistance and guidance on your next steps.
+You are required to personally approach and coordinate with your teacher within one (1) week from the date of this notice to discuss your academic standing and any possible next steps.
 
-We hope you will take this as an opportunity to reassess your attendance and academic commitments.
+Failure to do so may result in further academic consequences. We encourage you to take this matter seriously and act promptly.
 
 Respectfully,
 ${teacher}
@@ -3030,48 +3125,50 @@ function renderWeeklyReport() {
 // ── SATURDAY WEEKLY POPUP ──
 function checkSaturdayPopup() {
   const now = new Date();
-  if (now.getDay() !== 6) return; // 6 = Saturday
+
+  // ── TEMPORARY TEST LINE — remove after testing ──
+  // Comment out the line below to test on any day
+  // if (now.getDay() !== 6) return; // 6 = Saturday only
+
+  const todayStr = now.toISOString().split('T')[0];
   const key = `attendease_weekly_popup_${currentUser.id}`;
   const dismissed = localStorage.getItem(key);
-  const todayStr = now.toISOString().split('T')[0];
 
-  // Check if "Don't show again" was ever ticked
-  const dontShow = localStorage.getItem(`${key}_dontshow`);
-  if (dontShow === '1') return;
-
-  // Check if already dismissed today
+  // Already dismissed THIS Saturday (either via X or "Don't show again")
   if (dismissed === todayStr) return;
 
-  // Show popup
+  // Show the popup
   const { dropped, critical, warning } = getAlertStudents();
-  const total = dropped.length + critical.length + warning.length;
 
   showModal('📊 Weekly Absence Report', `
-    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">
-      Here is your absence summary for the week ending <strong>${now.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}</strong>.
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">
+      Week ending <strong>${now.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}</strong>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">
+      Please review your students who need attention.
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;text-align:center;">
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:24px;font-weight:700;color:var(--excused);">${warning.length}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Warning</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;text-align:center;">
+      <div style="background:rgba(255,171,64,0.1);border:0.5px solid rgba(255,171,64,0.3);border-radius:10px;padding:14px;">
+        <div style="font-size:28px;font-weight:700;color:var(--excused);font-family:'JetBrains Mono',monospace;">${warning.length}</div>
+        <div style="font-size:10px;color:var(--excused);margin-top:4px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Warning</div>
       </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:24px;font-weight:700;color:var(--absent);">${critical.length}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Critical</div>
+      <div style="background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;padding:14px;">
+        <div style="font-size:28px;font-weight:700;color:var(--absent);font-family:'JetBrains Mono',monospace;">${critical.length}</div>
+        <div style="font-size:10px;color:var(--absent);margin-top:4px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Critical</div>
       </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:24px;font-weight:700;color:#ff6b6b;">${dropped.length}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">Dropped</div>
+      <div style="background:rgba(255,107,107,0.1);border:0.5px solid rgba(255,107,107,0.3);border-radius:10px;padding:14px;">
+        <div style="font-size:28px;font-weight:700;color:#ff6b6b;font-family:'JetBrains Mono',monospace;">${dropped.length}</div>
+        <div style="font-size:10px;color:#ff6b6b;margin-top:4px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Dropped</div>
       </div>
     </div>
 
-    <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);margin-bottom:16px;cursor:pointer;">
-      <input type="checkbox" id="dontshow-checkbox" style="width:16px;height:16px;accent-color:var(--accent);">
-      Don't show this again
+    <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);margin-bottom:16px;cursor:pointer;background:var(--surface2);padding:12px;border-radius:10px;">
+      <input type="checkbox" id="dontshow-checkbox" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;">
+      <span>Don't show this again <span style="color:var(--text3);font-size:11px;">— for today only, will show again next Saturday</span></span>
     </label>
 
-    <button class="btn-primary" style="margin-bottom:10px;" onclick="dismissWeeklyPopup(false)">View Full Report</button>
+    <button class="btn-primary" style="margin-bottom:10px;" onclick="dismissWeeklyPopup(false)">📊 View Full Report</button>
     <button class="btn-secondary" onclick="dismissWeeklyPopup(true)">Dismiss</button>
   `);
 }
@@ -3080,15 +3177,12 @@ function dismissWeeklyPopup(dismissOnly) {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const key = `attendease_weekly_popup_${currentUser.id}`;
-  const dontShow = document.getElementById('dontshow-checkbox')?.checked;
 
-  // Save "don't show again" preference
-  if (dontShow) {
-    localStorage.setItem(`${key}_dontshow`, '1');
-  }
-
-  // Mark as dismissed for today
+  // Always save today's date as dismissed
+  // whether they ticked "don't show" or just dismissed
+  // Next Saturday will be a different date so popup shows again
   localStorage.setItem(key, todayStr);
+
   closeModalForce();
 
   if (!dismissOnly) {
@@ -3103,6 +3197,7 @@ function showSettingsScreen() {
   // populate account info
   document.getElementById('settings-name').textContent = currentUser.name;
   document.getElementById('settings-email').textContent = currentUser.email;
+  document.getElementById('input-display-name').value = getDisplayName();
   const avatarEl = document.getElementById('settings-avatar');
   if (currentUser.picture) {
     avatarEl.innerHTML = `<img src="${currentUser.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
