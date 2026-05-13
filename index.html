@@ -3163,6 +3163,54 @@ async function syncStudentsTab(token, sheetId) {
   );
 }
 
+// ── SYNC SCHEDULE TAB ──
+async function syncScheduleTab(token, sheetId) {
+  const schedules = getSchedules();
+  const rows = [['Section ID', 'Section Name', 'Days', 'Start Time', 'End Time', 'Building', 'Room', 'Updated At']];
+
+  Object.entries(schedules).forEach(([sectionId, sched]) => {
+    const sec = db.sections.find(s => s.id === sectionId);
+    if (!sec) return;
+    rows.push([
+      sectionId,
+      sec.name,
+      (sched.days || []).join(','),
+      sched.startTime || '',
+      sched.endTime || '',
+      sched.building || '',
+      sched.room || '',
+      sched.updatedAt || Date.now(),
+    ]);
+  });
+
+  // Check if __Schedule__ tab exists
+  const infoRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?includeGridData=false`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const info = await infoRes.json();
+  const exists = info.sheets?.find(s => s.properties.title === '__Schedule__');
+
+  if (!exists) {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{ addSheet: { properties: { title: '__Schedule__' } } }]
+      }),
+    });
+  }
+
+  await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('__Schedule__')}!A1:ZZ1000?valueInputOption=RAW`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: rows }),
+    }
+  );
+}
+
 // ── SYNC ONE SECTION TO A TAB ──
 async function syncSectionToSheet(token, sheetId, section) {
   const students = db.students
@@ -3240,6 +3288,58 @@ async function pullFromSheet(token, sheetId) {
   const sheetData = { sections: [], students: [], records: [] };
 
   for (const tabName of tabs) {
+
+    // Pull schedule from __Schedule__ tab
+    if (tabName === '__Schedule__') {
+      const valRes = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('__Schedule__')}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const valData = await valRes.json();
+      const rows = valData.values || [];
+      const schedules = getSchedules();
+
+      // Skip header row
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const sectionId = String(row[0] || '').trim();
+        const sectionName = String(row[1] || '').trim();
+        const daysRaw = String(row[2] || '').trim();
+        const startTime = String(row[3] || '').trim();
+        const endTime = String(row[4] || '').trim();
+        const building = String(row[5] || '').trim();
+        const room = String(row[6] || '').trim();
+
+        if (!sectionName || !daysRaw || !startTime) continue;
+
+        // Try to find section by ID first, then by name
+        let sec = db.sections.find(s => s.id === sectionId);
+        if (!sec) sec = db.sections.find(s => s.name.toLowerCase() === sectionName.toLowerCase());
+        if (!sec) continue;
+
+        // Only update if not already set locally
+        // (local schedule wins — teacher may have updated it on this device)
+        // Newer version wins (compare updatedAt timestamps)
+        const sheetUpdatedAt = parseInt(String(row[7] || '0')) || 0;
+        const incoming = {
+          days: daysRaw.split(',').map(Number).filter(n => !isNaN(n)),
+          startTime,
+          endTime,
+          building,
+          room,
+          updatedAt: sheetUpdatedAt || Date.now(),
+        };
+        const existing = schedules[sec.id];
+        // If no local schedule, or sheet version is newer → use sheet version
+        if (!existing || (incoming.updatedAt >= (existing.updatedAt || 0))) {
+          schedules[sec.id] = incoming;
+        }
+      }
+
+      saveSchedules(schedules);
+      continue;
+    }
+
     // Pull student profiles from __Students__ tab
     if (tabName === '__Students__') {
       const valRes = await fetch(
@@ -3485,6 +3585,10 @@ async function syncPending() {
     // For devices with pending data: push sends new records up.
     if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
     await syncStudentsTab(token, sheetId);
+    await syncScheduleTab(token, sheetId);
+    for (const section of sectionsToSync) {
+      await syncSectionToSheet(token, sheetId, section);
+    }
 
     // Push all sections that have pending data OR if this was an empty device restore
     const sectionsToSync = isEmptyDevice
