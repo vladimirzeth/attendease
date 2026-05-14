@@ -1691,6 +1691,25 @@
     font-size: 14px;
     color: var(--text2);
   }
+
+/* ── COLLAPSIBLE SIDEBAR ── */
+.pc-sidebar.collapsed { width: 64px; }
+.pc-sidebar.collapsed .pc-sidebar-logo-text,
+.pc-sidebar.collapsed .pc-sidebar-logo-sub,
+.pc-sidebar.collapsed .pc-sidebar-section-label,
+.pc-sidebar.collapsed #pc-sidebar-name,
+.pc-sidebar.collapsed .pc-sidebar-item span:not(.pc-sidebar-item-icon) {
+  display: none;
+}
+.pc-sidebar.collapsed .pc-sidebar-item {
+  justify-content: center;
+  padding: 12px;
+}
+.pc-sidebar.collapsed .pc-sidebar-item-icon { width: auto; }
+.pc-sidebar.collapsed #pc-sidebar-bottom-info { display: none; }
+.pc-sidebar { transition: width 0.25s ease; }
+.main-content { transition: margin-left 0.25s ease; }
+.main-content.sidebar-collapsed { margin-left: 64px; }
 </style>
 </head>
 <body>
@@ -1698,14 +1717,20 @@
 <!-- ── PC SIDEBAR ── -->
 <div class="pc-sidebar" id="pc-sidebar" style="display:none;">
   <!-- Logo -->
-  <div class="pc-sidebar-logo">
-    <div style="display:flex;align-items:center;gap:10px;">
+  <div class="pc-sidebar-logo" style="display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;" id="pc-sidebar-logo-inner"> 
       <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🎓</div>
       <div>
         <div class="pc-sidebar-logo-text">Attend<span>Ease</span></div>
         <div class="pc-sidebar-logo-sub">CASP Smart Attendance</div>
       </div>
     </div>
+    </div>
+  <button onclick="toggleSidebar()" id="sidebar-toggle-btn"
+    style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;">
+    ◀
+  </button>
+</div>
   </div>
 
   <!-- Nav -->
@@ -1752,7 +1777,7 @@
   </nav>
 
   <!-- User at BOTTOM -->
-  <div style="padding:16px;border-top:0.5px solid var(--border);margin-top:auto;">
+  <div id="pc-sidebar-bottom-info" style="padding:16px;border-top:0.5px solid var(--border);margin-top:auto;">
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface2);cursor:pointer;" onclick="showScreen('screen-settings')">
       <div class="pc-sidebar-avatar" id="pc-sidebar-avatar" style="width:38px;height:38px;font-size:15px;flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
@@ -2617,6 +2642,7 @@ function showNav() {
   } else {
     document.getElementById('bottom-nav').style.display = 'none';
     document.getElementById('pc-sidebar').style.display = 'flex';
+    initSidebarState();
   }
   updateNavUserInfo();
 }
@@ -2811,7 +2837,6 @@ function signOut() {
 
 function confirmSignOut() {
   closeModalForce();
-  // Revoke Google session (if GSI is loaded)
   if (currentUser && typeof google !== 'undefined' && google.accounts) {
     google.accounts.id.revoke(currentUser.email, () => {});
     google.accounts.id.disableAutoSelect();
@@ -2819,6 +2844,12 @@ function confirmSignOut() {
   localStorage.removeItem('attendease_user');
   currentUser = null;
   db = { sections: [], students: [], records: [] };
+
+  // ── Hide nav elements on sign out ──
+  document.getElementById('pc-sidebar').style.display = 'none';
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.getElementById('main-content').style.marginLeft = '0';
+
   showScreen('screen-login');
   toast('👋 Signed out successfully');
 }
@@ -5233,6 +5264,27 @@ function deleteTask(index) {
   saveTasks(tasks);
   renderDashTasks();
   toast('🗑️ Task removed');
+}
+
+// ── SIDEBAR COLLAPSE ──
+function toggleSidebar() {
+  const sidebar = document.getElementById('pc-sidebar');
+  const main = document.getElementById('main-content');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  main.classList.toggle('sidebar-collapsed', isCollapsed);
+  btn.textContent = isCollapsed ? '▶' : '◀';
+  localStorage.setItem('attendease_sidebar_collapsed', isCollapsed ? '1' : '0');
+}
+
+function initSidebarState() {
+  const collapsed = localStorage.getItem('attendease_sidebar_collapsed') === '1';
+  if (collapsed) {
+    document.getElementById('pc-sidebar')?.classList.add('collapsed');
+    document.getElementById('main-content')?.classList.add('sidebar-collapsed');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (btn) btn.textContent = '▶';
+  }
 }
 </script>
 </body>
