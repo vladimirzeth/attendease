@@ -2584,24 +2584,45 @@ function showNav() {
 function updateNavUserInfo() {
   if (!currentUser) return;
 
-  // Drawer
+  // ── Drawer ──
   const drawerAvatar = document.getElementById('drawer-avatar');
-  document.getElementById('drawer-name').textContent = currentUser.name;
-  document.getElementById('drawer-email').textContent = currentUser.email;
-  if (currentUser.picture) {
-    drawerAvatar.innerHTML = `<img src="${currentUser.picture}">`;
-  } else {
-    drawerAvatar.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
+  const drawerName = document.getElementById('drawer-name');
+  const drawerEmail = document.getElementById('drawer-email');
+  if (drawerName) drawerName.textContent = currentUser.name;
+  if (drawerEmail) drawerEmail.textContent = currentUser.email;
+  if (drawerAvatar) {
+    if (currentUser.picture) {
+      drawerAvatar.innerHTML = `<img src="${currentUser.picture}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      drawerAvatar.textContent = (currentUser.given_name || currentUser.name || 'T').charAt(0).toUpperCase();
+    }
   }
 
-  // PC Sidebar
+  // ── PC Sidebar ──
   const pcAvatar = document.getElementById('pc-sidebar-avatar');
-  document.getElementById('pc-sidebar-name').textContent = getDisplayName() || currentUser.name;
-  document.getElementById('pc-sidebar-email').textContent = currentUser.email;
-  if (currentUser.picture) {
-    pcAvatar.innerHTML = `<img src="${currentUser.picture}">`;
-  } else {
-    pcAvatar.textContent = (currentUser.given_name || 'T').charAt(0).toUpperCase();
+  const pcName = document.getElementById('pc-sidebar-name');
+  // pc-sidebar-email removed in new design — user row only shows name + role
+  if (pcName) pcName.textContent = getDisplayName() || currentUser.name;
+  if (pcAvatar) {
+    if (currentUser.picture) {
+      pcAvatar.innerHTML = `<img src="${currentUser.picture}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      pcAvatar.textContent = (currentUser.given_name || currentUser.name || 'T').charAt(0).toUpperCase();
+    }
+  }
+
+  // ── User bar (home screen, mobile) ──
+  const avatarEl = document.getElementById('user-avatar-el');
+  const nameEl = document.getElementById('user-display-name');
+  const emailEl = document.getElementById('user-display-email');
+  if (nameEl) nameEl.textContent = currentUser.name;
+  if (emailEl) emailEl.textContent = currentUser.email;
+  if (avatarEl) {
+    if (currentUser.picture) {
+      avatarEl.innerHTML = `<img src="${currentUser.picture}" alt="${currentUser.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      avatarEl.textContent = (currentUser.given_name || currentUser.name || 'T').charAt(0).toUpperCase();
+    }
   }
 }
 
