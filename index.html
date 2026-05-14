@@ -33,6 +33,43 @@
     --radius-sm: 10px;
   }
 
+  /* ── LIGHT MODE OVERRIDES ── */
+  body.light-mode {
+    --bg: #f0f2ff;
+    --surface: #ffffff;
+    --surface2: #e8ebf8;
+    --surface3: #dde1f5;
+    --text: #1a1a2e;
+    --text2: #4a5568;
+    --text3: #9ca3af;
+    --border: rgba(79,195,247,0.25);
+    --border2: rgba(79,195,247,0.4);
+  }
+  body.light-mode .pc-sidebar {
+    background: #ffffff;
+    border-right-color: rgba(79,195,247,0.2);
+  }
+  body.light-mode .bottom-nav {
+    background: #ffffff;
+    border-top-color: rgba(79,195,247,0.2);
+  }
+  body.light-mode .home-hero {
+    background: linear-gradient(135deg, #1a1040 0%, #2d1b69 40%, #1a2a5e 100%);
+  }
+  body.light-mode .drawer {
+    background: #ffffff;
+  }
+  body.light-mode .modal {
+    background: #ffffff;
+  }
+  body.light-mode .form-input {
+    background: #f8f9ff;
+    color: var(--text);
+  }
+  body.light-mode .topbar {
+    background: var(--bg);
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   body {
@@ -41,6 +78,7 @@
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
   }
 
   /* ── SCREENS ── */
@@ -1367,26 +1405,35 @@
   /* ── HOME HERO ── */
   .home-hero {
     position: relative;
-    min-height: 200px;
-    background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 40%, #0a1a3e 100%);
-    padding: 24px 24px 28px;
+    min-height: 240px;
+    background: linear-gradient(135deg, #060612 0%, #120828 30%, #0d1535 60%, #080e28 100%);
+    padding: 24px 24px 32px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
   }
   .home-hero-content { position: relative; z-index: 1; }
+  .home-hero-date {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
   .home-hero-greeting {
-    font-size: 26px;
+    font-size: 30px;
     font-weight: 700;
     color: white;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     letter-spacing: -0.5px;
+    text-shadow: 0 2px 20px rgba(124,77,255,0.3);
   }
   .home-hero-tagline {
     font-size: 13px;
-    color: rgba(255,255,255,0.5);
-    margin-bottom: 0;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 16px;
   }
   .home-hero-topbar {
     position: absolute;
@@ -1408,7 +1455,9 @@
     display: flex; align-items: center; justify-content: center;
     backdrop-filter: blur(4px);
     position: relative;
+    transition: background 0.15s;
   }
+  .hero-icon-btn:hover { background: rgba(255,255,255,0.15); }
   .hero-sync-badge {
     font-size: 10px;
     padding: 3px 8px;
@@ -1416,6 +1465,48 @@
     background: rgba(255,255,255,0.1);
     border: 0.5px solid rgba(255,255,255,0.2);
     color: rgba(255,255,255,0.7);
+  }
+
+  /* ── HERO QUICK STATS ── */
+  .hero-quick-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hero-stat-pill {
+    background: rgba(255,255,255,0.08);
+    border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── OBSERVATORY (PC only) ── */
+  @media (min-width: 768px) {
+    .observatory-shape { display: block !important; }
+    #hero-pc-actions { display: flex !important; }
+    .home-hero { min-height: 280px; }
+    .home-hero-greeting { font-size: 38px; }
+    .home-hero-tagline { font-size: 15px; }
+    .home-hero-topbar { display: none; }
+  }
+
+  /* ── QUOTE BAR ── */
+  .quote-bar {
+    padding: 12px 20px;
+    background: var(--surface);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text3);
+    font-style: italic;
   }
 
   /* ── DASHBOARD CARDS ── */
@@ -1578,47 +1669,48 @@
 
 <!-- ── PC SIDEBAR ── -->
 <div class="pc-sidebar" id="pc-sidebar" style="display:none;">
+  <!-- Logo -->
   <div class="pc-sidebar-logo">
-    <div class="pc-sidebar-logo-text">Attend<span>Ease</span></div>
-    <div class="pc-sidebar-logo-sub">CASP Smart Attendance</div>
-  </div>
-  <div class="pc-sidebar-user" id="pc-sidebar-user">
-    <div class="pc-sidebar-avatar" id="pc-sidebar-avatar"></div>
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="pc-sidebar-name"></div>
-      <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="pc-sidebar-email"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🎓</div>
+      <div>
+        <div class="pc-sidebar-logo-text">Attend<span>Ease</span></div>
+        <div class="pc-sidebar-logo-sub">CASP Smart Attendance</div>
+      </div>
     </div>
   </div>
+
+  <!-- Nav -->
   <nav class="pc-sidebar-nav">
     <div class="pc-sidebar-section-label">Main</div>
     <button class="pc-sidebar-item active" id="pc-nav-home" onclick="showScreen('screen-home')">
       <span class="pc-sidebar-item-icon">🏠</span> Home
     </button>
+    <button class="pc-sidebar-item" id="pc-nav-attendance" onclick="showScreen('screen-take-select')">
+      <span class="pc-sidebar-item-icon">✅</span> Attendance
+    </button>
     <button class="pc-sidebar-item" id="pc-nav-calendar" onclick="showScreen('screen-calendar')">
       <span class="pc-sidebar-item-icon">📅</span> Calendar
     </button>
-    <button class="pc-sidebar-item" id="pc-nav-attendance" onclick="showScreen('screen-take-select')">
-      <span class="pc-sidebar-item-icon">✅</span> Take Attendance
-    </button>
-    <div class="pc-sidebar-divider"></div>
-    <div class="pc-sidebar-section-label">Reports</div>
-    <button class="pc-sidebar-item" id="pc-nav-records" onclick="showScreen('screen-records')">
-      <span class="pc-sidebar-item-icon">📅</span> Records
-    </button>
-    <button class="pc-sidebar-item" id="pc-nav-absences" onclick="showScreen('screen-absences')">
-      <span class="pc-sidebar-item-icon">🚨</span> Absence Summary
-    </button>
-    <button class="pc-sidebar-item" id="pc-nav-weekly" onclick="showScreen('screen-weekly-report')">
-      <span class="pc-sidebar-item-icon">📊</span> Weekly Report
-    </button>
-    <button class="pc-sidebar-item" id="pc-nav-notifications" onclick="showScreen('screen-notifications')">
+    <button class="pc-sidebar-item" id="pc-nav-notifications" onclick="showScreen('screen-notifications')" style="position:relative;">
       <span class="pc-sidebar-item-icon">🔔</span> Notifications
       <span class="nav-notif" id="pc-notif-badge">0</span>
     </button>
     <div class="pc-sidebar-divider"></div>
-    <div class="pc-sidebar-section-label">Data</div>
+    <div class="pc-sidebar-section-label">Reports</div>
+    <button class="pc-sidebar-item" id="pc-nav-records" onclick="showScreen('screen-records')">
+      <span class="pc-sidebar-item-icon">📋</span> Records
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-absences" onclick="showScreen('screen-absences')">
+      <span class="pc-sidebar-item-icon">🚨</span> Absences
+    </button>
+    <button class="pc-sidebar-item" id="pc-nav-weekly" onclick="showScreen('screen-weekly-report')">
+      <span class="pc-sidebar-item-icon">📊</span> Weekly Report
+    </button>
+    <div class="pc-sidebar-divider"></div>
+    <div class="pc-sidebar-section-label">Manage</div>
     <button class="pc-sidebar-item" id="pc-nav-sections" onclick="showScreen('screen-sections')">
-      <span class="pc-sidebar-item-icon">🏫</span> Manage Sections
+      <span class="pc-sidebar-item-icon">🏫</span> Sections
     </button>
     <button class="pc-sidebar-item" id="pc-nav-import" onclick="showScreen('screen-import-export')">
       <span class="pc-sidebar-item-icon">📥</span> Import / Export
@@ -1626,14 +1718,21 @@
     <button class="pc-sidebar-item" onclick="syncPending()">
       <span class="pc-sidebar-item-icon">☁️</span> Sync Now
     </button>
-  </nav>
-  <div class="pc-sidebar-footer">
-    <button class="pc-sidebar-item" onclick="showScreen('screen-settings')" style="padding:10px 16px;border-radius:8px;">
+    <button class="pc-sidebar-item" onclick="showScreen('screen-settings')">
       <span class="pc-sidebar-item-icon">⚙️</span> Settings
     </button>
-    <button class="pc-sidebar-item" onclick="signOut()" style="padding:10px 16px;border-radius:8px;color:var(--absent);">
-      <span class="pc-sidebar-item-icon">🚪</span> Sign Out
-    </button>
+  </nav>
+
+  <!-- User at BOTTOM -->
+  <div style="padding:16px;border-top:0.5px solid var(--border);margin-top:auto;">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface2);cursor:pointer;" onclick="showScreen('screen-settings')">
+      <div class="pc-sidebar-avatar" id="pc-sidebar-avatar" style="width:38px;height:38px;font-size:15px;flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="pc-sidebar-name"></div>
+        <div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Teacher • CASP</div>
+      </div>
+      <button onclick="event.stopPropagation();signOut()" style="background:transparent;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px;" title="Sign out">🚪</button>
+    </div>
   </div>
 </div>
 
@@ -1745,26 +1844,44 @@
 <!-- ── HOME ── -->
 <div class="screen" id="screen-home">
 
-  <!-- HERO -->
+ <!-- HERO -->
   <div class="home-hero" id="home-hero">
     <div class="stars-bg" id="stars-bg"></div>
 
+    <!-- CSS Planet decorations -->
+    <div style="position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #4a2080 0%, #1a0a3e 50%, #0a0520 100%);opacity:0.6;pointer-events:none;z-index:0;box-shadow:inset -20px -10px 40px rgba(0,0,0,0.5);"></div>
+    <div style="position:absolute;top:20px;right:60px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle at 40% 30%, #7c4dff 0%, #3a1a6e 60%, #1a0a3e 100%);opacity:0.4;pointer-events:none;z-index:0;"></div>
+    <!-- Observatory silhouette -->
+    <div style="position:absolute;bottom:0;right:80px;width:60px;height:80px;background:rgba(0,0,0,0.3);clip-path:polygon(20% 100%, 20% 40%, 0% 40%, 50% 0%, 100% 40%, 80% 40%, 80% 100%);pointer-events:none;z-index:0;display:none;" class="observatory-shape"></div>
+
     <!-- Mobile topbar inside hero -->
     <div class="home-hero-topbar" id="hero-topbar">
-      <button onclick="openDrawer()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">☰</button>
+      <button onclick="openDrawer()" style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">☰</button>
       <div style="display:flex;align-items:center;gap:8px;">
         <div id="sync-status-badge" class="hero-sync-badge" style="display:none;">⏳ Syncing...</div>
+        <button class="hero-icon-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="Toggle dark/light mode">🌙</button>
         <button class="hero-icon-btn" onclick="showScreen('screen-notifications')" style="position:relative;">
           🔔
           <div class="notif-badge" id="notif-badge" style="position:absolute;top:-4px;right:-4px;">0</div>
         </button>
-        <button class="hero-icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
       </div>
     </div>
 
+    <!-- PC top right actions (visible on PC only) -->
+    <div style="position:absolute;top:20px;right:24px;display:none;gap:8px;z-index:2;" id="hero-pc-actions">
+      <button onclick="toggleTheme()" id="theme-toggle-btn-pc" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">🌙</button>
+      <button onclick="showScreen('screen-notifications')" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;backdrop-filter:blur(4px);">
+        🔔
+        <div class="notif-badge" id="notif-badge-pc" style="position:absolute;top:-4px;right:-4px;display:none;"></div>
+      </button>
+    </div>
+
     <div class="home-hero-content">
+      <div class="home-hero-date" id="home-hero-date"></div>
       <div class="home-hero-greeting" id="home-greeting">Good evening, Vladimir ✨</div>
       <div class="home-hero-tagline" id="home-tagline">Stay on top. Your students need you.</div>
+      <!-- Quick stats row inside hero -->
+      <div class="hero-quick-stats" id="hero-quick-stats"></div>
     </div>
   </div>
 
@@ -2647,6 +2764,45 @@ function confirmSignOut() {
 // ══════════════════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// DARK / LIGHT MODE
+// ══════════════════════════════════════════════════════════
+function initTheme() {
+  const saved = localStorage.getItem('attendease_theme') || 'dark';
+  applyTheme(saved);
+}
+
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light-mode');
+    document.querySelectorAll('#theme-toggle-btn, #theme-toggle-btn-pc').forEach(btn => {
+      if (btn) btn.textContent = '☀️';
+    });
+  } else {
+    document.body.classList.remove('light-mode');
+    document.querySelectorAll('#theme-toggle-btn, #theme-toggle-btn-pc').forEach(btn => {
+      if (btn) btn.textContent = '🌙';
+    });
+  }
+  localStorage.setItem('attendease_theme', theme);
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('attendease_theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// ── QUOTES ──
+const QUOTES = [
+  "The universe is vast, but every day you show up is a step toward your stars.",
+  "The stars don't compete, yet they shine together. Keep shining, keep learning.",
+  "Teaching is the profession that creates all other professions.",
+  "Every student is a star waiting to shine. Help them find their light.",
+  "Consistency is the rocket fuel of great teaching.",
+  "Your patience today plants seeds of success tomorrow.",
+  "Great teachers inspire students to believe in themselves.",
+];
+
 // ── TAGLINES ──
 const TAGLINES = [
   "Stay on top. Your students need you.",
@@ -2677,11 +2833,32 @@ function updateHome() {
   // Stars
   initStars();
 
+  // Hero date
+  const heroDate = document.getElementById('home-hero-date');
+  if (heroDate) heroDate.textContent = d.toLocaleDateString('en-PH', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
   // Stats
   const secEl = document.getElementById('stat-sections');
   const stuEl = document.getElementById('stat-students');
   if (secEl) secEl.textContent = db.sections.length;
   if (stuEl) stuEl.textContent = db.students.length;
+
+  // Hero quick stats pills
+  const heroStats = document.getElementById('hero-quick-stats');
+  if (heroStats) {
+    const todayClasses = getTodaySchedule();
+    const pending = todayClasses.filter(c => !c.taken).length;
+    const { dropped, critical, warning } = getAlertStudents();
+    const alerts = dropped.length + critical.length + warning.length;
+    heroStats.innerHTML = `
+      <div class="hero-stat-pill">🏫 ${db.sections.length} sections</div>
+      <div class="hero-stat-pill">📅 ${pending > 0 ? pending + ' class' + (pending>1?'es':'') + ' pending' : 'All classes done ✅'}</div>
+      ${alerts > 0 ? `<div class="hero-stat-pill" style="background:rgba(255,23,68,0.15);border-color:rgba(255,23,68,0.3);">⚠️ ${alerts} need attention</div>` : ''}
+    `;
+  }
+
+  // Quote bar
+  renderQuoteBar();
 
   // Sync card desc
   updateSyncCard();
@@ -2692,6 +2869,22 @@ function updateHome() {
   renderDashAttendance();
   renderDashSchedule();
   renderDashAttention();
+}
+
+// ── QUOTE BAR ──
+function renderQuoteBar() {
+  const existing = document.getElementById('quote-bar');
+  if (existing) existing.remove();
+
+  const d = new Date();
+  const quote = QUOTES[d.getDay() % QUOTES.length];
+  const bar = document.createElement('div');
+  bar.id = 'quote-bar';
+  bar.className = 'quote-bar';
+  bar.innerHTML = `<span style="font-size:18px;">🔭</span><span>"${quote}"</span>`;
+
+  const homeScreen = document.getElementById('screen-home');
+  if (homeScreen) homeScreen.appendChild(bar);
 }
 
 // ── STARS ──
@@ -4038,13 +4231,9 @@ async function syncPending() {
     if (badge) badge.textContent = '⬆️ Pushing to Sheet...';
     await syncStudentsTab(token, sheetId);
     await syncScheduleTab(token, sheetId);
-    for (const section of sectionsToSync) {
-      await syncSectionToSheet(token, sheetId, section);
-    }
 
-    // Push all sections that have pending data OR if this was an empty device restore
     const sectionsToSync = isEmptyDevice
-      ? db.sections  // push all sections after restore
+      ? db.sections
       : db.sections.filter(s => pendingSectionIds.has(s.id));
 
     for (const section of sectionsToSync) {
@@ -4108,7 +4297,7 @@ function updateSyncCard() {
 // INIT — wait for GSI to load, then check auth
 // ══════════════════════════════════════════════════════════
 window.addEventListener('load', () => {
-  // Give GSI script a moment to initialize
+  initTheme();
   setTimeout(initGoogleAuth, 800);
 });
 
