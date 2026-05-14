@@ -1979,37 +1979,39 @@
     </div>
 
     <!-- STATS ROW -->
-    <div class="dash-card" style="padding:14px;">
-      <div class="dash-card-title">🏫 Sections</div>
-      <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-sections">0</div>
-    </div>
-    <div class="dash-card" style="padding:14px;">
-      <div class="dash-card-title">👤 Students</div>
-      <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-students">0</div>
-    </div>
+    <div class="dash-card" id="dash-stat-sections" style="padding:20px;">
+  <div class="dash-card-title">🏫 Sections</div>
+  <div style="font-size:40px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);margin:8px 0;" id="stat-sections">0</div>
+  <div style="font-size:11px;color:var(--text3);">active sections</div>
+</div>
 
-    <!-- QUICK ACTIONS -->
-    <div class="dash-card dash-card-full" style="padding:14px;">
-      <div class="dash-card-title">⚡ Quick Actions</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-        <div onclick="showScreen('screen-take-select')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:rgba(79,195,247,0.06);border:0.5px solid rgba(79,195,247,0.3);border-radius:12px;cursor:pointer;">
-          <span style="font-size:22px;">✅</span>
-          <span style="font-size:10px;font-weight:600;color:var(--accent);text-align:center;">Attendance</span>
-        </div>
-        <div onclick="showScreen('screen-records')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
-          <span style="font-size:22px;">📅</span>
-          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;">Records</span>
-        </div>
-        <div onclick="showScreen('screen-absences')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
-          <span style="font-size:22px;">🚨</span>
-          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;">Absences</span>
-        </div>
-        <div onclick="syncPending()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
-          <span style="font-size:22px;">☁️</span>
-          <span style="font-size:10px;font-weight:600;color:var(--text2);text-align:center;" id="sync-desc">Sync</span>
-        </div>
-      </div>
+<div class="dash-card" id="dash-stat-students" style="padding:20px;">
+  <div class="dash-card-title">👤 Students</div>
+  <div style="font-size:40px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);margin:8px 0;" id="stat-students">0</div>
+  <div style="font-size:11px;color:var(--text3);">enrolled students</div>
+</div>
+
+<div class="dash-card" id="dash-quick-actions" style="padding:20px;">
+  <div class="dash-card-title">⚡ Quick Actions</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <div onclick="showScreen('screen-take-select')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;background:rgba(79,195,247,0.06);border:0.5px solid rgba(79,195,247,0.3);border-radius:12px;cursor:pointer;">
+      <span style="font-size:24px;">✅</span>
+      <span style="font-size:11px;font-weight:600;color:var(--accent);text-align:center;">Attendance</span>
     </div>
+    <div onclick="showScreen('screen-records')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+      <span style="font-size:24px;">📅</span>
+      <span style="font-size:11px;font-weight:600;color:var(--text2);text-align:center;">Records</span>
+    </div>
+    <div onclick="showScreen('screen-absences')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+      <span style="font-size:24px;">🚨</span>
+      <span style="font-size:11px;font-weight:600;color:var(--text2);text-align:center;">Absences</span>
+    </div>
+    <div onclick="syncPending()" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;cursor:pointer;">
+      <span style="font-size:24px;">☁️</span>
+      <span style="font-size:11px;font-weight:600;color:var(--text2);text-align:center;" id="sync-desc">Sync</span>
+    </div>
+  </div>
+</div>
 
   </div>
 
