@@ -2587,7 +2587,6 @@ function parseJwt(token) {
 
 function onSignedIn() {
   loadDB();
-  //updateUserBar();
   showNav();
   showScreen('screen-home');
   setupSyncInterval();
@@ -2622,24 +2621,6 @@ function onSignedIn() {
     }
   }
 }
-
-/* function updateUserBar() {
-  if (!currentUser) return;
-  document.getElementById('user-display-name').textContent = currentUser.name;
-  document.getElementById('user-display-email').textContent = currentUser.email;
-  const avatarEl = document.getElementById('user-avatar-el');
-  if (currentUser.picture) {
-    avatarEl.innerHTML = `<img src="${currentUser.picture}" alt="${currentUser.name}">`;
-  } else {
-    avatarEl.textContent = (currentUser.given_name || currentUser.name || 'T').charAt(0).toUpperCase();
-  }
-  // Update greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const greetEl = document.getElementById('home-greeting');
-  if (greetEl) greetEl.textContent = `${greeting}, ${currentUser.given_name || currentUser.name}`;
-}
-*/
 
 function signOut() {
   showModal('Sign out?', `
@@ -2705,7 +2686,6 @@ function updateHome() {
   // Sync card desc
   updateSyncCard();
   loadAutoSyncPref();
-  // updateUserBar();
   updateNavUserInfo();
 
   // Dashboard cards
