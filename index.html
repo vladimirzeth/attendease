@@ -1281,11 +1281,10 @@
       border-top: 0.5px solid var(--border);
     }
     .main-content {
-      margin-left: 240px;
+      margin-left: 0;
       flex: 1;
       min-height: 100vh;
-      transition: margin-left 0.25s ease;
-      min-width: 0;
+      width: 100%;
     }
     .screen { padding-bottom: 0; }
   }
@@ -1699,31 +1698,24 @@
     color: var(--text2);
   }
 
-/* ── COLLAPSIBLE SIDEBAR ── */
+/* ── PC SIDEBAR DRAWER MODE ── */
 @media (min-width: 768px) {
-  .pc-sidebar { transition: width 0.25s ease; overflow: hidden; }
-  .main-content { transition: margin-left 0.25s ease; min-width: 0; overflow-x: hidden; }
-  .pc-sidebar.collapsed { width: 64px; }
-  .main-content.sidebar-collapsed { margin-left: 64px; }
-
-  .pc-sidebar.collapsed #pc-sidebar-logo-inner,
-  .pc-sidebar.collapsed .pc-sidebar-section-label,
-  .pc-sidebar.collapsed #pc-sidebar-name,
-  .pc-sidebar.collapsed #pc-sidebar-bottom-info { display: none; }
-
-  .pc-sidebar.collapsed .pc-sidebar-item {
-    justify-content: center;
-    padding: 14px 0;
+  .pc-sidebar {
+    transform: translateX(-240px);
+    transition: transform 0.25s ease;
   }
-  .pc-sidebar.collapsed .pc-sidebar-item { font-size: 0; }
-  .pc-sidebar.collapsed .pc-sidebar-item .pc-sidebar-item-icon { font-size: 18px; }
-  .pc-sidebar.collapsed .pc-sidebar-item .nav-notif { display: none !important; }
-  .pc-sidebar.collapsed .pc-sidebar-logo { justify-content: center; }
-  .pc-sidebar.collapsed .pc-sidebar-divider { margin: 8px 12px; }
+  .pc-sidebar.pc-open {
+    transform: translateX(0);
+  }
+  #pc-sidebar-overlay.open {
+    display: block !important;
+  }
 }
 </style>
 </head>
 <body>
+<!-- ── PC SIDEBAR OVERLAY ── -->
+<div id="pc-sidebar-overlay" onclick="toggleSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);z-index:49;"></div>
 
 <!-- ── PC SIDEBAR ── -->
 <div class="pc-sidebar" id="pc-sidebar" style="display:none;">
@@ -1929,6 +1921,8 @@
 
     <!-- PC top right actions (visible on PC only) -->
     <div style="position:absolute;top:20px;right:24px;display:none;gap:8px;z-index:2;" id="hero-pc-actions">
+      <button onclick="toggleSidebar()" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">☰</button>
+      <button onclick="toggleTheme()"
       <button onclick="toggleTheme()" id="theme-toggle-btn-pc" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">🌙</button>
       <button onclick="showScreen('screen-notifications')" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;backdrop-filter:blur(4px);">
         🔔
@@ -5277,12 +5271,10 @@ function deleteTask(index) {
 // ── SIDEBAR COLLAPSE ──
 function toggleSidebar() {
   const sidebar = document.getElementById('pc-sidebar');
-  const main = document.getElementById('main-content');
-  const btn = document.getElementById('sidebar-toggle-btn');
-  const isCollapsed = sidebar.classList.toggle('collapsed');
-  main.classList.toggle('sidebar-collapsed', isCollapsed);
-  btn.textContent = isCollapsed ? '▶' : '◀';
-  localStorage.setItem('attendease_sidebar_collapsed', isCollapsed ? '1' : '0');
+  const overlay = document.getElementById('pc-sidebar-overlay');
+  const isOpen = sidebar.classList.toggle('pc-open');
+  if (overlay) overlay.classList.toggle('open', isOpen);
+  localStorage.setItem('attendease_sidebar_open', isOpen ? '1' : '0');
 }
 
 function initSidebarState() {
