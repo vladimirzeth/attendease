@@ -1693,44 +1693,40 @@
   }
 
 /* ── COLLAPSIBLE SIDEBAR ── */
+.pc-sidebar { transition: width 0.25s ease; overflow: hidden; }
+.main-content { transition: margin-left 0.25s ease; min-width: 0; overflow-x: hidden; }
 .pc-sidebar.collapsed { width: 64px; }
-.pc-sidebar.collapsed .pc-sidebar-logo-text,
-.pc-sidebar.collapsed .pc-sidebar-logo-sub,
+.main-content.sidebar-collapsed { margin-left: 64px; }
+
+.pc-sidebar.collapsed #pc-sidebar-logo-inner,
 .pc-sidebar.collapsed .pc-sidebar-section-label,
 .pc-sidebar.collapsed #pc-sidebar-name,
-.pc-sidebar.collapsed .pc-sidebar-item span:not(.pc-sidebar-item-icon) {
-  display: none;
-}
+.pc-sidebar.collapsed #pc-sidebar-bottom-info { display: none; }
+
 .pc-sidebar.collapsed .pc-sidebar-item {
   justify-content: center;
-  padding: 12px;
+  padding: 14px 0;
 }
-.pc-sidebar.collapsed .pc-sidebar-item-icon { width: auto; }
-.pc-sidebar.collapsed #pc-sidebar-bottom-info { display: none; }
-.pc-sidebar { transition: width 0.25s ease; }
-.main-content { transition: margin-left 0.25s ease; }
-.main-content.sidebar-collapsed { margin-left: 64px; }
+.pc-sidebar.collapsed .pc-sidebar-item span:not(.pc-sidebar-item-icon) { display: none; }
+.pc-sidebar.collapsed .pc-sidebar-logo { justify-content: center; }
+.pc-sidebar.collapsed .pc-sidebar-divider { margin: 8px 12px; }
 </style>
 </head>
 <body>
 
 <!-- ── PC SIDEBAR ── -->
 <div class="pc-sidebar" id="pc-sidebar" style="display:none;">
-  <!-- Logo -->
+ <!-- Logo -->
   <div class="pc-sidebar-logo" style="display:flex;align-items:center;justify-content:space-between;">
-    <div style="display:flex;align-items:center;gap:10px;" id="pc-sidebar-logo-inner"> 
+    <div style="display:flex;align-items:center;gap:10px;" id="pc-sidebar-logo-inner">
       <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🎓</div>
       <div>
         <div class="pc-sidebar-logo-text">Attend<span>Ease</span></div>
         <div class="pc-sidebar-logo-sub">CASP Smart Attendance</div>
       </div>
     </div>
-    </div>
-  <button onclick="toggleSidebar()" id="sidebar-toggle-btn"
-    style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;">
-    ◀
-  </button>
-</div>
+    <button onclick="toggleSidebar()" id="sidebar-toggle-btn"
+      style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;">◀</button>
   </div>
 
   <!-- Nav -->
@@ -2848,7 +2844,8 @@ function confirmSignOut() {
   // ── Hide nav elements on sign out ──
   document.getElementById('pc-sidebar').style.display = 'none';
   document.getElementById('bottom-nav').style.display = 'none';
-  document.getElementById('main-content').style.marginLeft = '0';
+  document.getElementById('main-content').classList.remove('sidebar-collapsed');
+  document.getElementById('main-content').style.marginLeft = '';
 
   showScreen('screen-login');
   toast('👋 Signed out successfully');
