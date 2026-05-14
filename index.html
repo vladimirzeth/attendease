@@ -2112,11 +2112,14 @@
   }
 
   
-  /* ── CALENDAR SCREEN FIX ── */
-  #screen-calendar.active {
-    display: flex;
+/* ── CALENDAR SCREEN FIX ── */
+  #screen-calendar {
+    display: none;
     flex-direction: column;
     min-height: 100vh;
+  }
+  #screen-calendar.active {
+    display: flex;
   }
   #screen-calendar #cal-view-month { display: block; }
   #screen-calendar #cal-view-week,
