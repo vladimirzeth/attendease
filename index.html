@@ -1639,10 +1639,20 @@
   .attention-meta { font-size: 11px; color: var(--text3); }
 
   @media (min-width: 768px) {
-    .home-hero { min-height: 180px; }
-    .home-hero-topbar { display: none; }
-    .dash-grid { grid-template-columns: 1fr 1fr 1fr; padding: 20px 20px 0; }
+  .home-hero { min-height: 180px; }
+  .home-hero-topbar { display: none; }
+  .dash-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 20px 20px 0;
   }
+  #dash-attendance { grid-column: 1; grid-row: 1; }
+  #dash-schedule   { grid-column: 2; grid-row: 1; }
+  #dash-tasks      { grid-column: 3; grid-row: 1; }
+  #dash-attention  { grid-column: 1 / -1; grid-row: 2; }
+  #dash-stat-sections { grid-column: 1; grid-row: 3; }
+  #dash-stat-students { grid-column: 2; grid-row: 3; }
+  #dash-quick-actions { grid-column: 3; grid-row: 3; }
+}
 
   /* ── AUTH LOADING ── */
   #screen-auth-loading {
@@ -1925,6 +1935,17 @@
       <div class="dash-card-title">📅 Today's Classes</div>
       <div id="dash-schedule-list">
         <div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">Loading...</div>
+      </div>
+    </div>
+
+    <!-- PERSONAL TASKS -->
+    <div class="dash-card" id="dash-tasks">
+      <div class="dash-card-title" style="justify-content:space-between;">
+        <span>📝 Personal Tasks</span>
+        <button onclick="addTask()" style="font-size:11px;color:var(--accent);background:transparent;border:none;cursor:pointer;font-family:Sora,sans-serif;">+ Add</button>
+      </div>
+      <div id="dash-tasks-list">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">No tasks yet ✨</div>
       </div>
     </div>
 
@@ -2890,6 +2911,7 @@ function updateHome() {
   renderDashAttendance();
   renderDashSchedule();
   renderDashAttention();
+  renderDashTasks();
 }
 
 // ── QUOTE BAR ──
@@ -5128,6 +5150,69 @@ async function silentSync() {
     if (badge) { badge.style.display = 'none'; }
     console.warn('Silent sync failed — token may be expired:', err);
   }
+}
+
+// ── PERSONAL TASKS ──
+function getTasks() {
+  if (!currentUser) return [];
+  const raw = localStorage.getItem(`attendease_tasks_${currentUser.id}`);
+  return raw ? JSON.parse(raw) : [];
+}
+function saveTasks(tasks) {
+  localStorage.setItem(`attendease_tasks_${currentUser.id}`, JSON.stringify(tasks));
+}
+
+function renderDashTasks() {
+  const list = document.getElementById('dash-tasks-list');
+  if (!list) return;
+  const tasks = getTasks();
+  if (tasks.length === 0) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">No tasks yet ✨</div>`;
+    return;
+  }
+  list.innerHTML = tasks.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);">
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})"
+        style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">
+      <span style="flex:1;font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':'color:var(--text)'};">${t.text}</span>
+      <button onclick="deleteTask(${i})" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 4px;">✕</button>
+    </div>`).join('');
+}
+
+function addTask() {
+  showModal('Add Task', `
+    <input class="form-input" id="new-task-input" placeholder="e.g. Check IT401A grades" type="text"
+      style="margin-bottom:16px;" onkeydown="if(event.key==='Enter')confirmAddTask()">
+    <button class="btn-primary" onclick="confirmAddTask()" style="margin-bottom:10px;">Add Task</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+  setTimeout(() => document.getElementById('new-task-input')?.focus(), 100);
+}
+
+function confirmAddTask() {
+  const val = document.getElementById('new-task-input')?.value.trim();
+  if (!val) { toast('⚠️ Please enter a task'); return; }
+  const tasks = getTasks();
+  tasks.push({ text: val, done: false });
+  saveTasks(tasks);
+  closeModalForce();
+  renderDashTasks();
+  toast('✅ Task added');
+}
+
+function toggleTask(index) {
+  const tasks = getTasks();
+  tasks[index].done = !tasks[index].done;
+  saveTasks(tasks);
+  renderDashTasks();
+}
+
+function deleteTask(index) {
+  const tasks = getTasks();
+  tasks.splice(index, 1);
+  saveTasks(tasks);
+  renderDashTasks();
+  toast('🗑️ Task removed');
 }
 </script>
 </body>
