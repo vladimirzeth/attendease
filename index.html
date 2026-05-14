@@ -2111,6 +2111,17 @@
     font-weight: 700;
   }
 
+  /* ── CALENDAR SCREEN FIX ── */
+  #screen-calendar.active {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  #screen-calendar #cal-view-month { display: block; }
+  #screen-calendar #cal-view-week,
+  #screen-calendar #cal-view-day,
+  #screen-calendar #cal-view-year { display: none; }
+
   /* ── AUTH LOADING ── */
   #screen-auth-loading {
     align-items: center;
@@ -2472,7 +2483,7 @@
 
   </div>
 
-  <!-- Bottom padding for nav -->
+ <!-- Bottom padding for nav -->
   <div style="height:20px;"></div>
 
   <!-- Hidden elements kept for compatibility -->
@@ -2481,7 +2492,9 @@
     <div id="sync-card"></div>
     <div id="home-stats"></div>
   </div>
+
 </div>
+<!-- END screen-home -->
 
 <!-- ── SECTIONS LIST ── -->
 <div class="screen" id="screen-sections">
