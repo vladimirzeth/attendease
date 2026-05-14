@@ -1639,9 +1639,21 @@
   .attention-meta { font-size: 11px; color: var(--text3); }
 
   @media (min-width: 768px) {
-    .home-hero { min-height: 180px; }
+    .home-hero { min-height: 240px; }
     .home-hero-topbar { display: none; }
-    .dash-grid { grid-template-columns: 1fr 1fr 1fr; padding: 20px 20px 0; }
+    .dash-grid {
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      padding: 20px 20px 0;
+      align-items: start;
+    }
+    #dash-attendance { grid-column: 1; grid-row: 1; }
+    #dash-schedule { grid-column: 2; grid-row: 1; }
+    #dash-attention { grid-column: 1 / -1; grid-row: 2; }
+    #dash-attention .attention-item { padding: 12px 0; }
+    #dash-stat-sections { grid-column: 1; grid-row: 3; }
+    #dash-stat-students { grid-column: 2; grid-row: 3; }
+    #dash-quick-actions { grid-column: 3; grid-row: 3; }
   }
 
   /* ── AUTH LOADING ── */
@@ -1940,17 +1952,17 @@
     </div>
 
     <!-- STATS ROW -->
-    <div class="dash-card" style="padding:14px;">
+    <div class="dash-card" id="dash-stat-sections" style="padding:14px;">
       <div class="dash-card-title">🏫 Sections</div>
       <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-sections">0</div>
     </div>
-    <div class="dash-card" style="padding:14px;">
+    <div class="dash-card" id="dash-stat-students" style="padding:14px;">
       <div class="dash-card-title">👤 Students</div>
       <div style="font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="stat-students">0</div>
     </div>
 
     <!-- QUICK ACTIONS -->
-    <div class="dash-card dash-card-full" style="padding:14px;">
+    <div class="dash-card dash-card-full" id="dash-quick-actions" style="padding:14px;">
       <div class="dash-card-title">⚡ Quick Actions</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
         <div onclick="showScreen('screen-take-select')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:rgba(79,195,247,0.06);border:0.5px solid rgba(79,195,247,0.3);border-radius:12px;cursor:pointer;">
