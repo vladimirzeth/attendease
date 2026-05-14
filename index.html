@@ -1922,6 +1922,7 @@
 
     <!-- PC top right actions (visible on PC only) -->
     <div style="position:absolute;top:20px;right:24px;display:none;gap:8px;z-index:2;" id="hero-pc-actions">
+       <button onclick="toggleSidebar()" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">☰</button>
       <button onclick="toggleTheme()"
       <button onclick="toggleTheme()" id="theme-toggle-btn-pc" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">🌙</button>
       <button onclick="showScreen('screen-notifications')" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;backdrop-filter:blur(4px);">
@@ -1931,7 +1932,6 @@
     </div>
 
     <div class="home-hero-content">
-       <button onclick="toggleSidebar()" style="background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">☰</button>
       <div class="home-hero-date" id="home-hero-date"></div>
       <div class="home-hero-greeting" id="home-greeting">Good evening, Vladimir ✨</div>
       <div class="home-hero-tagline" id="home-tagline">Stay on top. Your students need you.</div>
