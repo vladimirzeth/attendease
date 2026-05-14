@@ -2643,7 +2643,7 @@ function showNav() {
   } else {
     document.getElementById('bottom-nav').style.display = 'none';
     document.getElementById('pc-sidebar').style.display = 'flex';
-    initSidebarState();
+    document.getElementById('pc-sidebar').classList.remove('pc-open');
   }
   updateNavUserInfo();
 }
@@ -2849,8 +2849,9 @@ function confirmSignOut() {
   // ── Hide nav elements on sign out ──
   document.getElementById('pc-sidebar').style.display = 'none';
   document.getElementById('bottom-nav').style.display = 'none';
-  document.getElementById('main-content').classList.remove('sidebar-collapsed');
-  document.getElementById('main-content').style.marginLeft = '';
+  document.getElementById('pc-sidebar').classList.remove('pc-open');
+  const ov = document.getElementById('pc-sidebar-overlay');
+  if (ov) ov.classList.remove('open');
 
   showScreen('screen-login');
   toast('👋 Signed out successfully');
