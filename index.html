@@ -6680,13 +6680,13 @@ function _renderViewTasksModal() {
   showModal('📋 Tasks & Events', `
     <!-- Day navigator -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:8px 0;border-bottom:0.5px solid var(--border);">
-      <button onclick="viewTasksDate='${prevISO}';_renderViewTasksModal()"
+      <button onclick="navigateViewTasks(-1)"
         style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;">‹</button>
       <div style="text-align:center;">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${dayLabel}</div>
         <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${viewTasksDate}</div>
       </div>
-      <button onclick="viewTasksDate='${nextISO}';_renderViewTasksModal()"
+      <button onclick="navigateViewTasks(1)"
         style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;">›</button>
     </div>
 
@@ -6703,6 +6703,14 @@ function _renderViewTasksModal() {
       <button class="btn-secondary" onclick="closeModalForce()" style="flex:1;margin-top:0;">Close</button>
     </div>
   `);
+}
+
+// ── NAVIGATE VIEW TASKS (prev/next day) ──
+function navigateViewTasks(direction) {
+  const d = new Date(viewTasksDate + 'T00:00:00');
+  d.setDate(d.getDate() + direction);
+  viewTasksDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  _renderViewTasksModal();
 }
 
 // Legacy stubs (kept for safety)
