@@ -6485,9 +6485,14 @@ function openCalEventDetail(eventId) {
   if (!e) return;
 
   showModal(
-    `<div>
-      <button onclick="_renderViewTasksModal()">←</button>
-      <span>📅 Event Detail</span>
+    `<div class="header-container">
+      <button 
+      id="backButton" 
+      class="btn-back" 
+      aria-label="Back to Task List">
+      ←
+      </button>
+      <span class="header-title">📅 Event Detail</span>
     </div>`, `
     <div style="margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
@@ -6756,6 +6761,11 @@ function initSidebarState() {
     if (btn) btn.textContent = '▶';
   }
 }
+
+// Clean way to handle the click event
+document.getElementById('backButton').addEventListener('click', () => {
+  _renderViewTasksModal();
+});
 </script>
 </body>
 </html>
