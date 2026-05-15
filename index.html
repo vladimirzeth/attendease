@@ -3052,6 +3052,24 @@
       <input class="form-input" id="event-link-input" placeholder="https://..." type="url">
     </div>
 
+    <div class="form-group" id="event-status-wrap">
+      <label class="form-label">Status</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;" id="event-status-btns">
+        <button id="evst-todo" onclick="selectEventStatus('todo')"
+          style="padding:8px 4px;border-radius:8px;border:1.5px solid #546e7a;background:var(--surface2);color:var(--text3);font-family:Sora,sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+          📋 To Do
+        </button>
+        <button id="evst-inprogress" onclick="selectEventStatus('inprogress')"
+          style="padding:8px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text3);font-family:Sora,sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+          ⏳ In Progress
+        </button>
+        <button id="evst-done" onclick="selectEventStatus('done')"
+          style="padding:8px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text3);font-family:Sora,sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+          ✅ Done
+        </button>
+      </div>
+    </div>
+
     <!-- School event toggle — admin only -->
     <div id="event-school-toggle-wrap" style="display:none;margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);">
@@ -6125,6 +6143,8 @@ function openAddEvent() {
   document.getElementById('event-link-input').value = '';
   document.getElementById('editing-event-id').value = '';
   document.getElementById('add-event-title').textContent = 'New Event';
+  window._currentEventStatus = 'todo';
+  selectEventStatus('todo');
   isSchoolEvent = false;
   applySchoolEventToggle();
 
@@ -6161,6 +6181,8 @@ function openEditEvent(eventId) {
   document.getElementById('event-link-input').value = e.link || '';
   document.getElementById('editing-event-id').value = eventId;
   document.getElementById('add-event-title').textContent = 'Edit Event';
+  window._currentEventStatus = e.status || 'todo';
+  selectEventStatus(e.status || 'todo');
 
   const secSel = document.getElementById('event-section-input');
   if (secSel) {
@@ -6175,6 +6197,28 @@ function openEditEvent(eventId) {
   if (toggleWrap) toggleWrap.style.display = currentUser && currentUser.id === ADMIN_USER_ID ? 'block' : 'none';
 
   showScreen('screen-add-event');
+}
+
+function selectEventStatus(key) {
+  window._currentEventStatus = key;
+  const configs = {
+    todo:       { dot: '#546e7a', bg: 'var(--surface2)', color: 'var(--text3)' },
+    inprogress: { dot: '#ffab40', bg: 'rgba(255,171,64,0.12)', color: 'var(--excused)' },
+    done:       { dot: '#00e676', bg: 'rgba(0,230,118,0.12)', color: 'var(--present)' },
+  };
+  ['todo','inprogress','done'].forEach(k => {
+    const btn = document.getElementById(`evst-${k}`);
+    if (!btn) return;
+    if (k === key) {
+      btn.style.border = `1.5px solid ${configs[k].dot}`;
+      btn.style.background = configs[k].bg;
+      btn.style.color = configs[k].color;
+    } else {
+      btn.style.border = '1.5px solid var(--border)';
+      btn.style.background = 'var(--surface2)';
+      btn.style.color = 'var(--text3)';
+    }
+  });
 }
 
 function toggleSchoolEvent() {
@@ -6196,11 +6240,12 @@ function saveEvent() {
   const notes = document.getElementById('event-notes-input').value.trim();
   const link = document.getElementById('event-link-input').value.trim();
   const editId = document.getElementById('editing-event-id').value;
+  const status = window._currentEventStatus || 'todo';
 
   if (!title) { toast('⚠️ Title is required'); return; }
   if (!date) { toast('⚠️ Date is required'); return; }
 
-  const eventObj = { id: editId || uid(), title, date, time, section, notes, link,
+  const eventObj = { id: editId || uid(), title, date, time, section, notes, link, status,
     type: isSchoolEvent ? 'school' : 'personal', createdAt: Date.now() };
 
   if (isSchoolEvent && currentUser.id === ADMIN_USER_ID) {
@@ -6423,19 +6468,23 @@ function renderDashTasks() {
           <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${st.bg};color:${st.color};white-space:nowrap;">${st.label}</span>
         </div>`;
       } else {
-        // Calendar event
+        // Calendar event — show status like tasks
+        const evStatus = item.status || 'todo';
+        const evSt = TASK_STATUSES[evStatus];
+        const evDone = evStatus === 'done';
         return `<div onclick="openCalEventDetail('${item.id}', false)"
           style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
           onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:${evSt.dot};flex-shrink:0;"></div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
+            <div style="font-size:12px;font-weight:500;${evDone ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
             ${item.time ? `<div style="font-size:10px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
           </div>
-          <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(79,195,247,0.12);color:var(--accent);white-space:nowrap;">Event</span>
+          <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${evSt.bg};color:${evSt.color};white-space:nowrap;">${evSt.label}</span>
         </div>`;
       }
     }).join('') + `</div>`;
+}
 }
 
 // ── OPEN TASK DETAIL POPUP ──
