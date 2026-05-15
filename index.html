@@ -2162,18 +2162,6 @@
   }
 }
 
-.header-container {
-  display: flex;
-  align-items: center; /* Vertically centers the arrow and text */
-  gap: 10px;           /* Adds consistent spacing between them */
-}
-
-.btn-back {
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-}
 </style>
 </head>
 <body>
@@ -6497,16 +6485,7 @@ function openCalEventDetail(eventId) {
   const e = getPersonalEvents().find(ev => ev.id === eventId);
   if (!e) return;
 
-  showModal(
-    `<div class="header-container">
-      <button 
-      id="backButton" 
-      class="btn-back" 
-      aria-label="Back to Task List">
-      ←
-      </button>
-      <span class="header-title">📅 Event Detail</span>
-    </div>`, `
+  showModal(`📅 Event Detail`, `
     <div style="margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
@@ -6775,10 +6754,6 @@ function initSidebarState() {
   }
 }
 
-// Clean way to handle the click event
-document.getElementById('backButton').addEventListener('click', () => {
-  _renderViewTasksModal();
-});
 </script>
 </body>
 </html>
