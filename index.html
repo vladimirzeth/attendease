@@ -5989,11 +5989,12 @@ function renderDayView() {
   const events = getEventsForDate(calSelectedDate);
   const eventsByHour = {};
   events.forEach(e => {
-    const hour = e.time ? parseInt(e.time.split(':')[0]) : null;
-    if (hour !== null) {
-      if (!eventsByHour[hour]) eventsByHour[hour] = [];
-      eventsByHour[hour].push(e);
-    }
+    if (!e.time) return;
+    let hour = parseInt(e.time.split(':')[0]);
+    // midnight (0:xx) maps to slot 24 in our 1-24 range
+    if (hour === 0) hour = 24;
+    if (!eventsByHour[hour]) eventsByHour[hour] = [];
+    eventsByHour[hour].push(e);
   });
 
   // All-day events (no time)
@@ -6008,11 +6009,13 @@ function renderDayView() {
     </div>`;
   }
 
-  for (let h = 6; h <= 21; h++) {
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
+  for (let h = 1; h <= 24; h++) {
+    const displayH = h === 24 ? 0 : h;
+    const ampm = displayH >= 12 ? 'PM' : 'AM';
+    const h12 = displayH % 12 || 12;
     const label12 = `${h12}:00 ${ampm}`;
-    const isCurrentHour = new Date().getHours() === h && calSelectedDate === today();
+    const checkH = h === 24 ? 0 : h;
+    const isCurrentHour = new Date().getHours() === checkH && calSelectedDate === today();
     html += `<div class="cal-timeline-hour" ${isCurrentHour ? 'style="background:rgba(79,195,247,0.03)"' : ''}>
       <div class="cal-timeline-label">${label12}</div>
       <div class="cal-timeline-events">
@@ -6370,13 +6373,17 @@ function renderDashTasks() {
     list.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">No tasks yet ✨</div>`;
     return;
   }
-  list.innerHTML = tasks.map((t, i) => `
+  // Show max 6 tasks on dashboard to keep it compact
+  const displayTasks = tasks.slice(0, 6);
+  const hasMore = tasks.length > 6;
+  list.innerHTML = displayTasks.map((t, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);">
-      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})"
+      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${i})"
         style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">
-      <span style="flex:1;font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:var(--text3)':'color:var(--text)'};">${t.text}</span>
+      <span style="flex:1;font-size:12px;font-weight:500;${t.done ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};">${t.text}</span>
       <button onclick="deleteTask(${i})" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 4px;">✕</button>
-    </div>`).join('');
+    </div>`).join('')
+    + (hasMore ? `<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0;">${tasks.length - 6} more tasks…</div>` : '');
 }
 
 function addTask() {
@@ -6414,7 +6421,6 @@ function deleteTask(index) {
   renderDashTasks();
   toast('🗑️ Task removed');
 }
-
 // ── SIDEBAR COLLAPSE ──
 function toggleSidebar() {
   const sidebar = document.getElementById('pc-sidebar');
