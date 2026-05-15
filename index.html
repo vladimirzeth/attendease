@@ -6424,7 +6424,7 @@ function renderDashTasks() {
         </div>`;
       } else {
         // Calendar event
-        return `<div onclick="openCalEventDetail('${item.id}')"
+        return `<div onclick="openCalEventDetail('${item.id}', false)"
           style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
           onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
           <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
@@ -6481,11 +6481,17 @@ function openTaskDetail(realIdx) {
 }
 
 // ── OPEN CALENDAR EVENT DETAIL POPUP ──
-function openCalEventDetail(eventId) {
+function openCalEventDetail(eventId, fromViewTasks = false) {
   const e = getPersonalEvents().find(ev => ev.id === eventId);
   if (!e) return;
 
-  showModal(`📅 Event Detail`, `
+  showModal(``, `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      ${fromViewTasks ? `<button onclick="closeModalForce();_renderViewTasksModal()"
+        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>` : ''}
+      <div style="font-size:17px;font-weight:700;color:var(--text);">📅 Event Detail</div>
+    </div>
+
     <div style="margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
@@ -6508,12 +6514,6 @@ function openCalEventDetail(eventId) {
         style="padding:12px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:12px;cursor:pointer;">
         🗑️
       </button>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="_renderViewTasksModal()"
-        style="flex:1;padding:11px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
-        ← Back
-        </button>
     </div>
     <button class="btn-secondary" onclick="closeModalForce()">Close</button>
   `);
@@ -6671,7 +6671,7 @@ function _renderViewTasksModal() {
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${st.bg};color:${st.color};white-space:nowrap;flex-shrink:0;">${st.label}</span>
           </div>`;
         } else {
-          return `<div onclick="closeModalForce();openCalEventDetail('${item.id}')"
+          return `<div onclick="openCalEventDetail('${item.id}', true)"
             style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
             <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
