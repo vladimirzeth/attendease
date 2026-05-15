@@ -3714,26 +3714,21 @@ function renderDashSchedule() {
     } else if (isPast) {
       tagHtml = `<span class="schedule-tag" style="background:rgba(255,23,68,0.1);color:var(--absent);">✗ Missed</span>`;
       dotColor = 'var(--absent)';
-    } else if 
+    } else { 
       tagHtml = `<span class="schedule-tag pending">⏳ Soon</span>`;
       dotColor = 'var(--excused)';
-    } else {
+    }
         // Calendar event — show status like tasks
-        const evStatus = item.status || 'todo';
-        const evSt = TASK_STATUSES[evStatus];
-        const evDone = evStatus === 'done';
-        return `<div onclick="openCalEventDetail('${item.id}')"
-          style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
-          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-          <div style="width:8px;height:8px;border-radius:50%;background:${evSt.dot};flex-shrink:0;"></div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;font-weight:500;${evDone ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
-            ${item.time ? `<div style="font-size:10px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
-          </div>
-          <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${evSt.bg};color:${evSt.color};white-space:nowrap;">${evSt.label}</span>
-        </div>`;
-      }
-    }).join('') + `</div>`;
+        return `
+      <div class="schedule-item" style="display:flex; align-items:center; gap:8px; padding:7px 4px;">
+        <div style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></div>
+        <div style="flex:1;">
+          <div style="font-size:12px; font-weight:500;">${cls.name || cls.title}</div>
+          <div style="font-size:10px; color:var(--text3);">${cls.startTime} - ${cls.endTime}</div>
+        </div>
+        ${tagHtml}
+      </div>`;
+    }).join('');
   }
 
 
