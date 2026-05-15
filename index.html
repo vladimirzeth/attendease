@@ -6368,22 +6368,72 @@ function saveTasks(tasks) {
 function renderDashTasks() {
   const list = document.getElementById('dash-tasks-list');
   if (!list) return;
+
   const tasks = getTasks();
-  if (tasks.length === 0) {
+
+  // Pull upcoming personal calendar events (today + future, max 30 days ahead)
+  const todayISO = today();
+  const futureLimit = new Date();
+  futureLimit.setDate(futureLimit.getDate() + 30);
+  const futureLimitISO = futureLimit.toISOString().split('T')[0];
+
+  const calEvents = getPersonalEvents()
+    .filter(e => e.date >= todayISO && e.date <= futureLimitISO)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+
+  const hasAnything = tasks.length > 0 || calEvents.length > 0;
+
+  if (!hasAnything) {
     list.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 0;">No tasks yet ✨</div>`;
     return;
   }
-  // Show max 6 tasks on dashboard to keep it compact
-  const displayTasks = tasks.slice(0, 6);
-  const hasMore = tasks.length > 6;
-  list.innerHTML = displayTasks.map((t, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);">
-      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${i})"
-        style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">
-      <span style="flex:1;font-size:12px;font-weight:500;${t.done ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};">${t.text}</span>
-      <button onclick="deleteTask(${i})" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:2px 4px;">✕</button>
-    </div>`).join('')
-    + (hasMore ? `<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0;">${tasks.length - 6} more tasks…</div>` : '');
+
+  let html = '';
+
+  // ── Manual tasks ──
+  if (tasks.length > 0) {
+    if (calEvents.length > 0) {
+      html += `<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:4px 0 6px;">Tasks</div>`;
+    }
+    const showTasks = tasks.slice(0, 4);
+    html += showTasks.map((t, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
+        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${i})"
+          style="width:14px;height:14px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">
+        <span style="flex:1;font-size:12px;font-weight:500;${t.done ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};">${t.text}</span>
+        <button onclick="deleteTask(${i})" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px;">✕</button>
+      </div>`).join('');
+    if (tasks.length > 4) {
+      html += `<div style="font-size:10px;color:var(--text3);padding:4px 0 2px;">+${tasks.length - 4} more tasks</div>`;
+    }
+  }
+
+  // ── Upcoming personal calendar events ──
+  if (calEvents.length > 0) {
+    html += `<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:${tasks.length > 0 ? '10px' : '4px'} 0 6px;">Upcoming Events</div>`;
+    const showEvents = calEvents.slice(0, 4);
+    html += showEvents.map(e => {
+      const d = new Date(e.date + 'T00:00:00');
+      const isToday = e.date === todayISO;
+      const isTomorrow = e.date === (() => { const t = new Date(); t.setDate(t.getDate()+1); return t.toISOString().split('T')[0]; })();
+      const dayLabel = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : d.toLocaleDateString('en-PH', {month:'short', day:'numeric'});
+      const timeLabel = e.time ? formatTime12(e.time) : '';
+      return `
+        <div onclick="showScreen('screen-calendar')" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:1px;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.title}</div>
+            <div style="font-size:10px;color:var(--text3);">${dayLabel}${timeLabel ? ' · ' + timeLabel : ''}</div>
+          </div>
+          <span style="font-size:9px;color:var(--accent);">→</span>
+        </div>`;
+    }).join('');
+    if (calEvents.length > 4) {
+      html += `<div style="font-size:10px;color:var(--text3);padding:4px 0 2px;">+${calEvents.length - 4} more events</div>`;
+    }
+  }
+
+  list.innerHTML = html;
 }
 
 function addTask() {
