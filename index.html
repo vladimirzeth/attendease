@@ -6437,6 +6437,190 @@ function renderDashTasks() {
     }).join('') + `</div>`;
 }
 
+// ── OPEN TASK DETAIL POPUP ──
+function openTaskDetail(realIdx) {
+  const tasks = getTasks();
+  const t = tasks[realIdx];
+  if (!t) return;
+  const st = TASK_STATUSES[t.status || 'todo'];
+
+  showModal(`📝 Task Detail`, `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${t.text}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+        ${t.date ? `<span style="font-size:11px;color:var(--text3);">📅 ${fmtDate(t.date)}</span>` : ''}
+        ${t.time ? `<span style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(t.time)}</span>` : ''}
+      </div>
+      ${t.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.5;">${t.notes}</div>` : ''}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Status</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        ${Object.entries(TASK_STATUSES).map(([key, val]) => `
+          <button onclick="setTaskStatus(${realIdx},'${key}')"
+            style="padding:10px 4px;border-radius:10px;border:1.5px solid ${(t.status||'todo')===key ? val.dot : 'var(--border)'};background:${(t.status||'todo')===key ? val.bg : 'var(--surface2)'};color:${(t.status||'todo')===key ? val.color : 'var(--text3)'};font-family:Sora,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+            ${key==='todo'?'📋':key==='inprogress'?'⏳':'✅'}<br>${val.label}
+          </button>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button onclick="closeModalForce();showScreen('screen-calendar')"
+        style="flex:1;padding:12px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
+        📅 Check Calendar
+      </button>
+      <button onclick="deleteTaskFromDetail(${realIdx})"
+        style="padding:12px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:12px;cursor:pointer;">
+        🗑️
+      </button>
+    </div>
+    <button class="btn-secondary" onclick="closeModalForce()">Close</button>
+  `);
+}
+
+// ── OPEN CALENDAR EVENT DETAIL POPUP ──
+function openCalEventDetail(eventId) {
+  const e = getPersonalEvents().find(ev => ev.id === eventId);
+  if (!e) return;
+
+  showModal(`📅 Event Detail`, `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+        ${e.date ? `<span style="font-size:11px;color:var(--text3);">📅 ${fmtDate(e.date)}</span>` : ''}
+        ${e.time ? `<span style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(e.time)}</span>` : ''}
+        ${e.section ? `<span style="font-size:11px;color:var(--text3);">🏫 ${db.sections.find(s=>s.id===e.section)?.name||e.section}</span>` : ''}
+      </div>
+      ${e.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.5;">${e.notes}</div>` : ''}
+      ${e.link ? `<a href="${e.link}" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;color:var(--accent);">🔗 Open link</a>` : ''}
+    </div>
+
+    <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(79,195,247,0.12);color:var(--accent);margin-bottom:16px;">Personal Event</span>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button onclick="closeModalForce();calSelectedDate='${e.date}';calDate=new Date('${e.date}T00:00:00');showScreen('screen-calendar')"
+        style="flex:1;padding:12px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
+        📅 Check Calendar
+      </button>
+      <button onclick="deleteCalEventFromDash('${eventId}')"
+        style="padding:12px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:12px;cursor:pointer;">
+        🗑️
+      </button>
+    </div>
+    <button class="btn-secondary" onclick="closeModalForce()">Close</button>
+  `);
+}
+
+// ── SET TASK STATUS ──
+function setTaskStatus(realIdx, status) {
+  const tasks = getTasks();
+  if (!tasks[realIdx]) return;
+  tasks[realIdx].status = status;
+  saveTasks(tasks);
+  closeModalForce();
+  renderDashTasks();
+  toast(`✅ Marked as ${TASK_STATUSES[status].label}`);
+}
+
+// ── DELETE FROM DETAIL POPUP ──
+function deleteTaskFromDetail(realIdx) {
+  const tasks = getTasks();
+  tasks.splice(realIdx, 1);
+  saveTasks(tasks);
+  closeModalForce();
+  renderDashTasks();
+  toast('🗑️ Task removed');
+}
+
+function deleteCalEventFromDash(eventId) {
+  const events = getPersonalEvents().filter(e => e.id !== eventId);
+  savePersonalEvents(events);
+  closeModalForce();
+  renderDashTasks();
+  toast('🗑️ Event removed');
+}
+
+// ── ADD TASK (full form) ──
+function addTask() {
+  const todayISO = today();
+  showModal('Add Task', `
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Title <span style="color:var(--absent);">*</span></label>
+      <input class="form-input" id="new-task-title" placeholder="e.g. Check IT401A grades" type="text"
+        style="font-size:14px;" onkeydown="if(event.key==='Enter')document.getElementById('new-task-date').focus()">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <label class="form-label">Date</label>
+        <input class="form-input" id="new-task-date" type="date" value="${todayISO}" style="font-size:13px;">
+      </div>
+      <div>
+        <label class="form-label">Time <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <input class="form-input" id="new-task-time" type="time" style="font-size:13px;">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <textarea class="form-input" id="new-task-notes" placeholder="Add details..." rows="2"
+        style="font-size:13px;resize:none;"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label class="form-label">Status</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        ${Object.entries(TASK_STATUSES).map(([key, val]) => `
+          <button id="new-task-status-${key}" onclick="selectNewTaskStatus('${key}')"
+            style="padding:8px 4px;border-radius:8px;border:1.5px solid ${key==='todo'?val.dot:'var(--border)'};background:${key==='todo'?val.bg:'var(--surface2)'};color:${key==='todo'?val.color:'var(--text3)'};font-family:Sora,sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+            ${key==='todo'?'📋':key==='inprogress'?'⏳':'✅'} ${val.label}
+          </button>`).join('')}
+      </div>
+    </div>
+    <button class="btn-primary" onclick="confirmAddTask()" style="margin-bottom:10px;">Add Task</button>
+    <button class="btn-secondary" onclick="closeModalForce()">Cancel</button>
+  `);
+  setTimeout(() => document.getElementById('new-task-title')?.focus(), 100);
+  // Store selected status
+  window._newTaskStatus = 'todo';
+}
+
+function selectNewTaskStatus(key) {
+  window._newTaskStatus = key;
+  Object.entries(TASK_STATUSES).forEach(([k, val]) => {
+    const btn = document.getElementById(`new-task-status-${k}`);
+    if (!btn) return;
+    if (k === key) {
+      btn.style.border = `1.5px solid ${val.dot}`;
+      btn.style.background = val.bg;
+      btn.style.color = val.color;
+    } else {
+      btn.style.border = '1.5px solid var(--border)';
+      btn.style.background = 'var(--surface2)';
+      btn.style.color = 'var(--text3)';
+    }
+  });
+}
+
+function confirmAddTask() {
+  const title = document.getElementById('new-task-title')?.value.trim();
+  const date  = document.getElementById('new-task-date')?.value  || today();
+  const time  = document.getElementById('new-task-time')?.value  || '';
+  const notes = document.getElementById('new-task-notes')?.value.trim() || '';
+  const status = window._newTaskStatus || 'todo';
+  if (!title) { toast('⚠️ Title is required'); return; }
+  const tasks = getTasks();
+  tasks.push({ id: uid(), text: title, date, time, notes, status });
+  saveTasks(tasks);
+  closeModalForce();
+  renderDashTasks();
+  toast('✅ Task added');
+}
+
+// ── VIEW TASKS POPUP (day navigator) ──
+function openViewTasks() {
+  viewTasksDate = today();
+  _renderViewTasksModal();
+}
+
 function _renderViewTasksModal() {
   const todayISO = today();
   const d = new Date(viewTasksDate + 'T00:00:00');
@@ -6447,17 +6631,17 @@ function _renderViewTasksModal() {
   const nextISO = tomorrow.toISOString().split('T')[0];
   const prevISO = yesterday.toISOString().split('T')[0];
 
-  const allTasks = getTasks();
-  const tasks = allTasks
-    .map((t, i) => ({ ...t, _realIdx: i }))
-    .filter(t => (t.date || todayISO) === viewTasksDate);
-
+  const tasks = getTasks().filter(t => (t.date || todayISO) === viewTasksDate);
   const calEvents = getPersonalEvents()
     .filter(e => e.date === viewTasksDate)
     .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
   const combined = [
-    ...tasks.map(t => ({ _type: 'task', ...t })),
+    ...tasks.map((t, i) => {
+      // Find real index in full tasks array
+      const realIdx = getTasks().findIndex(task => task === t || (task.id && task.id === t.id));
+      return { _type: 'task', _realIdx: realIdx, ...t };
+    }),
     ...calEvents.map(e => ({ _type: 'event', ...e })),
   ].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
@@ -6469,184 +6653,56 @@ function _renderViewTasksModal() {
         if (item._type === 'task') {
           const st = TASK_STATUSES[item.status || 'todo'];
           const isDone = (item.status || 'todo') === 'done';
-          return `<div onclick="viewTaskInline(${item._realIdx})"
-            style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
-            onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+          return `<div onclick="closeModalForce();openTaskDetail(${item._realIdx})"
+            style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
             <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:500;${isDone?'text-decoration:line-through;color:var(--text3)':'color:var(--text)'};">${item.text}</div>
               ${item.time ? `<div style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
-              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.notes}</div>` : ''}
+              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${item.notes}</div>` : ''}
             </div>
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${st.bg};color:${st.color};white-space:nowrap;flex-shrink:0;">${st.label}</span>
           </div>`;
         } else {
-          return `<div onclick="viewEventInline('${item.id}')"
-            style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
-            onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+          return `<div onclick="closeModalForce();openCalEventDetail('${item.id}')"
+            style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
             <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);">${item.title}</div>
               ${item.time ? `<div style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
-              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.notes}</div>` : ''}
+              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${item.notes}</div>` : ''}
             </div>
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(79,195,247,0.12);color:var(--accent);white-space:nowrap;flex-shrink:0;">Event</span>
           </div>`;
         }
       }).join('');
 
-  // Fixed-height modal — always same structure, scrollable list
-  document.getElementById('modal-title').textContent = '📋 Tasks & Events';
-  document.getElementById('modal-body').innerHTML = `
+  showModal('📋 Tasks & Events', `
     <!-- Day navigator -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:0.5px solid var(--border);">
-      <button id="vtm-prev-btn"
-        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <button onclick="viewTasksDate='${prevISO}';_renderViewTasksModal()"
+        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;">‹</button>
       <div style="text-align:center;">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${dayLabel}</div>
         <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${viewTasksDate}</div>
       </div>
-      <button id="vtm-next-btn"
-        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
+      <button onclick="viewTasksDate='${nextISO}';_renderViewTasksModal()"
+        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;">›</button>
     </div>
 
-    <!-- FIXED HEIGHT scrollable item list -->
-    <div style="height:260px;overflow-y:auto;margin-bottom:12px;padding-right:2px;">
+    <!-- Item list -->
+    <div style="max-height:320px;overflow-y:auto;margin-bottom:16px;">
       ${itemsHtml}
     </div>
 
     <div style="display:flex;gap:8px;">
       <button onclick="closeModalForce();addTask()"
-        style="flex:1;padding:11px;background:var(--accent2);border:none;border-radius:10px;color:white;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+        style="flex:1;padding:12px;background:var(--accent2);border:none;border-radius:10px;color:white;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
         + Add Task
       </button>
-      <button onclick="closeModalForce()"
-        style="flex:1;padding:11px;background:transparent;border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:14px;cursor:pointer;">
-        Close
-      </button>
+      <button class="btn-secondary" onclick="closeModalForce()" style="flex:1;margin-top:0;">Close</button>
     </div>
-  `;
-
-  // Attach nav button events AFTER innerHTML is set
-  document.getElementById('vtm-prev-btn').addEventListener('click', () => {
-    viewTasksDate = prevISO;
-    _renderViewTasksModal();
-  });
-  document.getElementById('vtm-next-btn').addEventListener('click', () => {
-    viewTasksDate = nextISO;
-    _renderViewTasksModal();
-  });
-
-  // Make sure modal is open
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-// ── VIEW TASK INLINE (detail inside same modal pattern, with Back) ──
-function viewTaskInline(realIdx) {
-  const tasks = getTasks();
-  const t = tasks[realIdx];
-  if (!t) return;
-  const st = TASK_STATUSES[t.status || 'todo'];
-
-  document.getElementById('modal-title').textContent = '📝 Task Detail';
-  document.getElementById('modal-body').innerHTML = `
-    <div style="margin-bottom:14px;">
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3;">${t.text}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${t.date ? `<span style="font-size:11px;color:var(--text3);">📅 ${fmtDate(t.date)}</span>` : ''}
-        ${t.time ? `<span style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(t.time)}</span>` : ''}
-      </div>
-      ${t.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.5;">${t.notes}</div>` : ''}
-    </div>
-
-    <div style="margin-bottom:16px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Change Status</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-        ${Object.entries(TASK_STATUSES).map(([key, val]) => `
-          <button onclick="setTaskStatusInline(${realIdx},'${key}')"
-            style="padding:10px 4px;border-radius:10px;border:1.5px solid ${(t.status||'todo')===key ? val.dot : 'var(--border)'};background:${(t.status||'todo')===key ? val.bg : 'var(--surface2)'};color:${(t.status||'todo')===key ? val.color : 'var(--text3)'};font-family:Sora,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;">
-            ${key==='todo'?'📋':key==='inprogress'?'⏳':'✅'}<br>${val.label}
-          </button>`).join('')}
-      </div>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="_renderViewTasksModal()"
-        style="flex:1;padding:11px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
-        ← Back
-      </button>
-      <button onclick="deleteTaskFromViewModal(${realIdx})"
-        style="padding:11px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
-        🗑️ Delete
-      </button>
-    </div>
-  `;
-}
-
-// ── VIEW EVENT INLINE ──
-function viewEventInline(eventId) {
-  const e = getPersonalEvents().find(ev => ev.id === eventId);
-  if (!e) return;
-
-  document.getElementById('modal-title').textContent = '📅 Event Detail';
-  document.getElementById('modal-body').innerHTML = `
-    <div style="margin-bottom:14px;">
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3;">${e.title}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${e.date ? `<span style="font-size:11px;color:var(--text3);">📅 ${fmtDate(e.date)}</span>` : ''}
-        ${e.time ? `<span style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(e.time)}</span>` : ''}
-        ${e.section ? `<span style="font-size:11px;color:var(--text3);">🏫 ${db.sections.find(s=>s.id===e.section)?.name||e.section}</span>` : ''}
-      </div>
-      ${e.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.5;">${e.notes}</div>` : ''}
-      ${e.link ? `<a href="${e.link}" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;color:var(--accent);">🔗 Open link</a>` : ''}
-    </div>
-
-    <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(79,195,247,0.12);color:var(--accent);margin-bottom:14px;">Personal Event</span>
-
-    <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="_renderViewTasksModal()"
-        style="flex:1;padding:11px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
-        ← Back
-      </button>
-      <button onclick="deleteEventFromViewModal('${eventId}')"
-        style="padding:11px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
-        🗑️ Delete
-      </button>
-    </div>
-    <button onclick="closeModalForce();calSelectedDate='${e.date}';calDate=new Date('${e.date}T00:00:00');showScreen('screen-calendar')"
-      style="width:100%;padding:11px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:13px;cursor:pointer;">
-      📅 View in Calendar
-    </button>
-  `;
-}
-
-// ── STATUS UPDATE INSIDE MODAL ──
-function setTaskStatusInline(realIdx, status) {
-  const tasks = getTasks();
-  if (!tasks[realIdx]) return;
-  tasks[realIdx].status = status;
-  saveTasks(tasks);
-  renderDashTasks();
-  viewTaskInline(realIdx); // re-render detail with new status
-  toast(`✅ Marked as ${TASK_STATUSES[status].label}`);
-}
-
-// ── DELETE FROM MODAL (returns to list) ──
-function deleteTaskFromViewModal(realIdx) {
-  const tasks = getTasks();
-  tasks.splice(realIdx, 1);
-  saveTasks(tasks);
-  renderDashTasks();
-  _renderViewTasksModal(); // go back to list after delete
-  toast('🗑️ Task removed');
-}
-
-function deleteEventFromViewModal(eventId) {
-  const events = getPersonalEvents().filter(e => e.id !== eventId);
-  savePersonalEvents(events);
-  renderDashTasks();
-  _renderViewTasksModal(); // go back to list after delete
-  toast('🗑️ Event removed');
+  `);
 }
 
 // Legacy stubs (kept for safety)
