@@ -6472,7 +6472,7 @@ function renderDashTasks() {
         const evStatus = item.status || 'todo';
         const evSt = TASK_STATUSES[evStatus];
         const evDone = evStatus === 'done';
-        return `<div onclick="openCalEventDetail('${item.id}')"
+        return `<div onclick="openCalEventDetail('${item.id}' false)"
           style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:0.5px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.1s;"
           onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
           <div style="width:8px;height:8px;border-radius:50%;background:${evSt.dot};flex-shrink:0;"></div>
