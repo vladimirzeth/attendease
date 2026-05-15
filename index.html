@@ -6484,7 +6484,11 @@ function openCalEventDetail(eventId) {
   const e = getPersonalEvents().find(ev => ev.id === eventId);
   if (!e) return;
 
-  showModal(`📅 Event Detail`, `
+  showModal(
+    `<div>
+      <button onclick="_renderViewTasksModal()">←</button>
+      <span>📅 Event Detail</span>
+    </div>`, `
     <div style="margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
