@@ -6549,9 +6549,12 @@ function openCalEventDetail(eventId, fromViewTasks = false) {
   const e = getPersonalEvents().find(ev => ev.id === eventId);
   if (!e) return;
 
-  showModal(`📅 Event Detail`, `
-    ${fromViewTasks ? `<button onclick="closeModalForce();_renderViewTasksModal()"
-      style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;font-family:Sora,sans-serif;">← Back</button>` : ''}
+  showModal(``, `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      ${fromViewTasks ? `<button onclick="closeModalForce();_renderViewTasksModal()"
+        style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>` : ''}
+      <div style="font-size:17px;font-weight:700;color:var(--text);">📅 Event Detail</div>
+    </div>
 
     <div style="margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${e.title}</div>
