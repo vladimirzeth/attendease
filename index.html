@@ -3714,11 +3714,10 @@ function renderDashSchedule() {
     } else if (isPast) {
       tagHtml = `<span class="schedule-tag" style="background:rgba(255,23,68,0.1);color:var(--absent);">✗ Missed</span>`;
       dotColor = 'var(--absent)';
-    } else if () {
+    } else if () 
       tagHtml = `<span class="schedule-tag pending">⏳ Soon</span>`;
       dotColor = 'var(--excused)';
-    }
-      else {
+    } else {
         // Calendar event — show status like tasks
         const evStatus = item.status || 'todo';
         const evSt = TASK_STATUSES[evStatus];
@@ -3735,7 +3734,8 @@ function renderDashSchedule() {
         </div>`;
       }
     }).join('') + `</div>`;
-}
+  }
+
 
 
 // ── NEEDS ATTENTION ──
