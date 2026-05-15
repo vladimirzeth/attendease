@@ -3718,18 +3718,17 @@ function renderDashSchedule() {
       tagHtml = `<span class="schedule-tag pending">⏳ Soon</span>`;
       dotColor = 'var(--excused)';
     }
-        // Calendar event — show status like tasks
-        return `
-      <div class="schedule-item" style="display:flex; align-items:center; gap:8px; padding:7px 4px;">
-        <div style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></div>
-        <div style="flex:1;">
-          <div style="font-size:12px; font-weight:500;">${cls.name || cls.title}</div>
-          <div style="font-size:10px; color:var(--text3);">${cls.startTime} - ${cls.endTime}</div>
-        </div>
-        ${tagHtml}
-      </div>`;
-    }).join('');
-  }
+      return `<div class="schedule-item" onclick="startAttendance('${cls.sectionId}')">
+      <div class="schedule-status-dot" style="background:${dotColor}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="schedule-item-name">${cls.sectionName}</div>
+        <div class="schedule-item-time">${formatTime12(cls.startTime)}</div>
+      </div>
+      ${tagHtml}
+    </div>`;
+  }).join('');
+
+}
 
 
 
