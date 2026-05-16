@@ -6537,11 +6537,14 @@ function setEventStatus(eventId, status, fromViewTasks) {
   if (idx < 0) return;
   events[idx].status = status;
   savePersonalEvents(events);
-  closeModalForce();
   renderDashTasks();
   toast(`✅ Marked as ${TASK_STATUSES[status].label}`);
-  if (fromViewTasks) _renderViewTasksModal();
-  else openCalEventDetail(eventId, false);
+  // Re-render the detail in-place (modal stays open)
+  if (fromViewTasks) {
+    openCalEventDetail(eventId, true);
+  } else {
+    openCalEventDetail(eventId, false);
+  }
 }
 
 // ── OPEN CALENDAR EVENT DETAIL POPUP ──
@@ -6549,9 +6552,15 @@ function openCalEventDetail(eventId, fromViewTasks = false) {
   const e = getPersonalEvents().find(ev => ev.id === eventId);
   if (!e) return;
 
-  showModal(``, `
+  const currentStatus = e.status || 'todo';
+  const notesHtml = e.notes
+    ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${e.notes}</div>`
+    : '';
+
+  document.getElementById('modal-title').textContent = '';
+  document.getElementById('modal-body').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      ${fromViewTasks ? `<button onclick="closeModalForce();_renderViewTasksModal()"
+      ${fromViewTasks ? `<button id="evdet-back-btn"
         style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>` : ''}
       <div style="font-size:17px;font-weight:700;color:var(--text);">📅 Event Detail</div>
     </div>
@@ -6563,7 +6572,7 @@ function openCalEventDetail(eventId, fromViewTasks = false) {
         ${e.time ? `<span style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(e.time)}</span>` : ''}
         ${e.section ? `<span style="font-size:11px;color:var(--text3);">🏫 ${db.sections.find(s=>s.id===e.section)?.name||e.section}</span>` : ''}
       </div>
-      ${e.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.5;">${e.notes}</div>` : ''}
+      ${notesHtml}
       ${e.link ? `<a href="${e.link}" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;color:var(--accent);">🔗 Open link</a>` : ''}
     </div>
 
@@ -6571,27 +6580,57 @@ function openCalEventDetail(eventId, fromViewTasks = false) {
 
     <div style="margin-bottom:16px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Status</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;" id="evdet-status-grid">
         ${Object.entries(TASK_STATUSES).map(([key, val]) => `
-          <button onclick="setEventStatus('${eventId}','${key}',${fromViewTasks})"
-            style="padding:10px 4px;border-radius:10px;border:1.5px solid ${(e.status||'todo')===key ? val.dot : 'var(--border)'};background:${(e.status||'todo')===key ? val.bg : 'var(--surface2)'};color:${(e.status||'todo')===key ? val.color : 'var(--text3)'};font-family:Sora,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;">
+          <button id="evdet-st-${key}"
+            style="padding:10px 4px;border-radius:10px;border:1.5px solid ${currentStatus===key ? val.dot : 'var(--border)'};background:${currentStatus===key ? val.bg : 'var(--surface2)'};color:${currentStatus===key ? val.color : 'var(--text3)'};font-family:Sora,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;">
             ${key==='todo'?'📋':key==='inprogress'?'⏳':'✅'}<br>${val.label}
           </button>`).join('')}
       </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="closeModalForce();calSelectedDate='${e.date}';calDate=new Date('${e.date}T00:00:00');showScreen('screen-calendar')"
+      <button id="evdet-cal-btn"
         style="flex:1;padding:12px;background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;color:var(--text2);font-family:Sora,sans-serif;font-size:12px;font-weight:600;cursor:pointer;">
         📅 Check Calendar
       </button>
-      <button onclick="deleteCalEventFromDash('${eventId}')"
+      <button id="evdet-del-btn"
         style="padding:12px 14px;background:rgba(255,23,68,0.1);border:0.5px solid rgba(255,23,68,0.3);border-radius:10px;color:var(--absent);font-family:Sora,sans-serif;font-size:12px;cursor:pointer;">
         🗑️
       </button>
     </div>
-    <button class="btn-secondary" onclick="closeModalForce()">Close</button>
-  `);
+    <button id="evdet-close-btn" style="width:100%;padding:14px;background:transparent;border:0.5px solid var(--border);border-radius:var(--radius-sm);font-family:Sora,sans-serif;font-size:14px;color:var(--text2);cursor:pointer;">Close</button>
+  `;
+
+  document.getElementById('modal-overlay').classList.add('open');
+
+  // Attach events AFTER innerHTML is set
+  if (fromViewTasks) {
+    document.getElementById('evdet-back-btn')?.addEventListener('click', () => {
+      _renderViewTasksModal();
+    });
+  }
+
+  Object.keys(TASK_STATUSES).forEach(key => {
+    document.getElementById(`evdet-st-${key}`)?.addEventListener('click', () => {
+      setEventStatus(eventId, key, fromViewTasks);
+    });
+  });
+
+  document.getElementById('evdet-cal-btn').addEventListener('click', () => {
+    closeModalForce();
+    calSelectedDate = e.date;
+    calDate = new Date(e.date + 'T00:00:00');
+    showScreen('screen-calendar');
+  });
+
+  document.getElementById('evdet-del-btn').addEventListener('click', () => {
+    deleteCalEventFromDash(eventId);
+  });
+
+  document.getElementById('evdet-close-btn').addEventListener('click', () => {
+    closeModalForce();
+  });
 }
 
 // ── SET TASK STATUS ──
@@ -6746,15 +6785,18 @@ function _renderViewTasksModal() {
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${st.bg};color:${st.color};white-space:nowrap;flex-shrink:0;">${st.label}</span>
           </div>`;
         } else {
+          const evStatus = item.status || 'todo';
+          const evSt = TASK_STATUSES[evStatus];
+          const evDone = evStatus === 'done';
           return `<div onclick="openCalEventDetail('${item.id}', true)"
             style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
-            <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
+            <div style="width:8px;height:8px;border-radius:50%;background:${evSt.dot};flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:var(--text);">${item.title}</div>
+              <div style="font-size:13px;font-weight:500;${evDone ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};">${item.title}</div>
               ${item.time ? `<div style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
-              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${item.notes}</div>` : ''}
+              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:pre-wrap;">${item.notes}</div>` : ''}
             </div>
-            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(79,195,247,0.12);color:var(--accent);white-space:nowrap;flex-shrink:0;">Event</span>
+            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${evSt.bg};color:${evSt.color};white-space:nowrap;flex-shrink:0;">${evSt.label}</span>
           </div>`;
         }
       }).join('');
