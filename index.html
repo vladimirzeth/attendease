@@ -3045,7 +3045,38 @@
     </div>
     <div class="form-group">
       <label class="form-label">Notes <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
-      <textarea class="form-input" id="event-notes-input" placeholder="Add notes..." rows="3" style="resize:vertical;"></textarea>
+      <!-- Rich text toolbar -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;background:var(--surface2);border:0.5px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0;">
+        <button type="button" onclick="notesFmt('bold')" title="Bold"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;font-family:serif;">B</button>
+        <button type="button" onclick="notesFmt('italic')" title="Italic"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-style:italic;font-size:13px;cursor:pointer;font-family:serif;">I</button>
+        <button type="button" onclick="notesFmt('underline')" title="Underline"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);text-decoration:underline;font-size:13px;cursor:pointer;font-family:serif;">U</button>
+        <div style="width:1px;background:var(--border);margin:2px 2px;"></div>
+        <button type="button" onclick="notesFmt('insertUnorderedList')" title="Bullet list"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;line-height:1;">•≡</button>
+        <button type="button" onclick="notesFmt('insertOrderedList')" title="Numbered list"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;cursor:pointer;line-height:1;">1≡</button>
+        <div style="width:1px;background:var(--border);margin:2px 2px;"></div>
+        <button type="button" onclick="notesFmt('removeFormat')" title="Clear formatting"
+          style="width:30px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text3);font-size:11px;cursor:pointer;">✕</button>
+      </div>
+      <!-- Editable content area -->
+      <div id="event-notes-input"
+        contenteditable="true"
+        data-placeholder="Add notes..."
+        style="width:100%;min-height:90px;max-height:200px;overflow-y:auto;background:var(--surface);border:0.5px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:12px 14px;font-family:Sora,sans-serif;font-size:14px;color:var(--text);outline:none;line-height:1.6;word-break:break-word;"></div>
+      <style>
+        #event-notes-input:empty:before {
+          content: attr(data-placeholder);
+          color: var(--text3);
+          pointer-events: none;
+        }
+        #event-notes-input ul { padding-left: 20px; margin: 4px 0; }
+        #event-notes-input ol { padding-left: 20px; margin: 4px 0; }
+        #event-notes-input li { margin: 2px 0; }
+      </style>
     </div>
     <div class="form-group">
       <label class="form-label">Link <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
@@ -6136,11 +6167,16 @@ function setCalView(view, el) {
 }
 
 // ── ADD / EDIT EVENT ──
+function notesFmt(cmd) {
+  document.getElementById('event-notes-input').focus();
+  document.execCommand(cmd, false, null);
+}
+
 function openAddEvent() {
   document.getElementById('event-title-input').value = '';
   document.getElementById('event-date-input').value = calSelectedDate;
   document.getElementById('event-time-input').value = '';
-  document.getElementById('event-notes-input').value = '';
+  document.getElementById('event-notes-input').innerHTML = '';
   document.getElementById('event-link-input').value = '';
   document.getElementById('editing-event-id').value = '';
   document.getElementById('add-event-title').textContent = 'New Event';
@@ -6178,7 +6214,7 @@ function openEditEvent(eventId) {
   document.getElementById('event-title-input').value = e.title || '';
   document.getElementById('event-date-input').value = e.date || '';
   document.getElementById('event-time-input').value = e.time || '';
-  document.getElementById('event-notes-input').value = e.notes || '';
+  document.getElementById('event-notes-input').innerHTML = e.notes || '';
   document.getElementById('event-link-input').value = e.link || '';
   document.getElementById('editing-event-id').value = eventId;
   document.getElementById('add-event-title').textContent = 'Edit Event';
@@ -6238,7 +6274,8 @@ function saveEvent() {
   const date = document.getElementById('event-date-input').value;
   const time = document.getElementById('event-time-input').value;
   const section = document.getElementById('event-section-input').value;
-  const notes = document.getElementById('event-notes-input').value.trim();
+  const notesEl = document.getElementById('event-notes-input');
+  const notes = (notesEl.innerHTML || '').trim() === '<br>' ? '' : (notesEl.innerHTML || '').trim();
   const link = document.getElementById('event-link-input').value.trim();
   const editId = document.getElementById('editing-event-id').value;
   const status = window._currentEventStatus || 'todo';
@@ -6554,7 +6591,14 @@ function openCalEventDetail(eventId, fromViewTasks = false) {
 
   const currentStatus = e.status || 'todo';
   const notesHtml = e.notes
-    ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${e.notes}</div>`
+    ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:10px;background:var(--surface2);border-radius:8px;line-height:1.6;word-break:break-word;max-height:120px;overflow-y:auto;">
+        <style>
+          .evdet-notes ul{padding-left:18px;margin:4px 0;}
+          .evdet-notes ol{padding-left:18px;margin:4px 0;}
+          .evdet-notes li{margin:2px 0;}
+        </style>
+        <div class="evdet-notes">${e.notes}</div>
+      </div>`
     : '';
 
   document.getElementById('modal-title').textContent = '';
@@ -6792,9 +6836,8 @@ function _renderViewTasksModal() {
             style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;">
             <div style="width:8px;height:8px;border-radius:50%;background:${evSt.dot};flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;${evDone ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};">${item.title}</div>
+              <div style="font-size:13px;font-weight:500;${evDone ? 'text-decoration:line-through;color:var(--text3)' : 'color:var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
               ${item.time ? `<div style="font-size:11px;color:var(--text3);">🕐 ${formatTime12(item.time)}</div>` : ''}
-              ${item.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:pre-wrap;">${item.notes}</div>` : ''}
             </div>
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${evSt.bg};color:${evSt.color};white-space:nowrap;flex-shrink:0;">${evSt.label}</span>
           </div>`;
