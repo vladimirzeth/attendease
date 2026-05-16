@@ -4481,13 +4481,14 @@ async function getToken(interactive = false) {
   throw new Error('no_token');
 }
 
-// ── FIND OR CREATE THE TEACHER'S GOOGLE SHEET ──
-async function getOrCreateSheet(token) {
-  const sheetName = `${SHEET_NAME_PREFIX} - ${currentUser.name}`;
+// ── FIND OR CREATE A DRIVE FOLDER ──
+async function getOrCreateFolder(token, folderName, parentId = null) {
+  // Build search query
+  let q = `name='${encodeURIComponent(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  if (parentId) q += ` and '${parentId}' in parents`;
 
-  // Search Drive for existing sheet
   const searchRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(sheetName)}'+and+mimeType='application/vnd.google-apps.spreadsheet'+and+trashed=false&fields=files(id,name)`,
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   const searchData = await searchRes.json();
@@ -4496,17 +4497,85 @@ async function getOrCreateSheet(token) {
     return searchData.files[0].id;
   }
 
-  // Create new sheet
+  // Create folder
+  const body = {
+    name: folderName,
+    mimeType: 'application/vnd.google-apps.folder',
+  };
+  if (parentId) body.parents = [parentId];
+
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const createData = await createRes.json();
+  return createData.id;
+}
+
+// ── GET OR CREATE FOLDER STRUCTURE: AttendEase / Attendance ──
+// Returns the ID of the "Attendance" subfolder
+async function getAttendanceFolderId(token) {
+  // Layer 1: root-level "AttendEase" folder
+  const rootFolderId = await getOrCreateFolder(token, 'AttendEase');
+  // Layer 2: "Attendance" subfolder inside AttendEase
+  const attendanceFolderId = await getOrCreateFolder(token, 'Attendance', rootFolderId);
+  return attendanceFolderId;
+}
+
+// ── FIND OR CREATE THE TEACHER'S GOOGLE SHEET ──
+async function getOrCreateSheet(token) {
+  const sheetName = `${SHEET_NAME_PREFIX} - ${currentUser.name}`;
+
+  // Get (or create) the AttendEase/Attendance folder
+  const attendanceFolderId = await getAttendanceFolderId(token);
+
+  // Search for existing sheet inside that folder
+  const q = `name='${encodeURIComponent(sheetName)}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false and '${attendanceFolderId}' in parents`;
+  const searchRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const searchData = await searchRes.json();
+
+  if (searchData.files && searchData.files.length > 0) {
+    return searchData.files[0].id;
+  }
+
+  // Also check if the sheet exists anywhere in Drive (migration: move it into the folder)
+  const anywhereRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(sheetName)}'+and+mimeType='application/vnd.google-apps.spreadsheet'+and+trashed=false&fields=files(id,name,parents)`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const anywhereData = await anywhereRes.json();
+
+  if (anywhereData.files && anywhereData.files.length > 0) {
+    const existingFile = anywhereData.files[0];
+    // Move it into the Attendance folder
+    const currentParents = (existingFile.parents || []).join(',');
+    await fetch(
+      `https://www.googleapis.com/drive/v3/files/${existingFile.id}?addParents=${attendanceFolderId}&removeParents=${currentParents}&fields=id,parents`,
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      }
+    );
+    toast('📁 Moved attendance sheet into AttendEase/Attendance folder');
+    return existingFile.id;
+  }
+
+  // Create new sheet directly inside the Attendance folder
   const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: sheetName,
       mimeType: 'application/vnd.google-apps.spreadsheet',
+      parents: [attendanceFolderId],
     }),
   });
   const createData = await createRes.json();
-  toast(`📊 Created Google Sheet: ${sheetName}`);
+  toast(`📊 Created attendance sheet in AttendEase/Attendance`);
   return createData.id;
 }
 
