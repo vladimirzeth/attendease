@@ -4920,43 +4920,36 @@ function mergeSheetData(sheetData) {
     }
   });
 
-  // 3. For each section that exists in the sheet, REPLACE local records entirely
-  // This ensures deletions made on one device are reflected on all devices
-  const sectionsInSheet = new Set(sheetData.sections.map(s => s.name.toLowerCase()));
+ // 3. Upsert records from sheet — never wipe, only add/update individual records
+  // Pending local records (taken offline) always win over sheet data
+  const pendingEntries = JSON.parse(localStorage.getItem(pendingKey()) || '[]');
+  const pendingSet = new Set(pendingEntries.map(p => `${p.sectionId}::${p.date}`));
 
-  sectionsInSheet.forEach(secName => {
-    const sec = db.sections.find(s => s.name.toLowerCase() === secName);
+  sheetData.records.forEach(shRec => {
+    const sec = db.sections.find(s => s.name.toLowerCase() === shRec.sectionName.toLowerCase());
     if (!sec) return;
 
-    // Get all records from sheet for this section
-    const sheetRecordsForSection = sheetData.records.filter(r =>
-      r.sectionName.toLowerCase() === secName
+    const st = db.students.find(s =>
+      s.sectionId === sec.id &&
+      s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
+      s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
+    );
+    if (!st) return;
+
+    // Skip if this section+date is pending local (local wins)
+    if (pendingSet.has(`${sec.id}::${shRec.date}`)) return;
+
+    // Find existing local record for this student+date
+    const existingIdx = db.records.findIndex(r =>
+      r.studentId === st.id && r.date === shRec.date
     );
 
-    // Get pending local records for this section (taken offline, not yet synced)
-    const pendingDates = new Set(
-      JSON.parse(localStorage.getItem(pendingKey()) || '[]')
-        .filter(p => p.sectionId === sec.id)
-        .map(p => p.date)
-    );
-
-    // Remove all local records for this section EXCEPT pending offline ones
-    db.records = db.records.filter(r =>
-      r.sectionId !== sec.id || pendingDates.has(r.date)
-    );
-
-    // Add all sheet records for this section
-    sheetRecordsForSection.forEach(shRec => {
-      const st = db.students.find(s =>
-        s.sectionId === sec.id &&
-        s.lastName.toLowerCase() === shRec.lastName.toLowerCase() &&
-        s.firstName.toLowerCase() === shRec.firstName.toLowerCase()
-      );
-      if (!st) return;
-
-      // Don't overwrite pending offline records
-      if (pendingDates.has(shRec.date)) return;
-
+    if (existingIdx >= 0) {
+      // Update existing record's status from sheet
+      db.records[existingIdx].status = shRec.status;
+      db.records[existingIdx].syncedAt = shRec.syncedAt || Date.now();
+    } else {
+      // Insert new record from sheet
       db.records.push({
         id: uid(),
         sectionId: sec.id,
@@ -4965,7 +4958,7 @@ function mergeSheetData(sheetData) {
         status: shRec.status,
         syncedAt: shRec.syncedAt || Date.now()
       });
-    });
+    }
   });
 
   saveDB();
